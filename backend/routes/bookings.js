@@ -4,6 +4,7 @@ const Booking = require('../models/Booking');
 const Room = require('../models/Room');
 const adminAuth = require('../middleware/adminAuth');
 const createNotification = require('../utils/createNotification');
+const createAdminNotification = require('../utils/createAdminNotification');
 const { getActiveOffer, calculateDiscount } = require('../utils/offerPricing');
 
 const router = express.Router();
@@ -243,6 +244,16 @@ router.post('/', async (req, res) => {
       transactionId: paymentMethod === 'UPI' ? String(transactionId).trim() : '',
       paymentStatus: paymentMethod === 'UPI' ? 'Pending' : 'Unpaid',
       paymentVerifiedAt: null
+    });
+
+    await createAdminNotification({
+      type: 'booking',
+      refNo: booking.refNo,
+      recordId: booking._id,
+      customerName: booking.name,
+      phone: booking.phone,
+      title: 'New Room Booking',
+      message: `${booking.name} requested Room ${booking.roomNumber}.`
     });
 
     await createNotification({

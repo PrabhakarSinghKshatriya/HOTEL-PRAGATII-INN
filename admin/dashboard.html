@@ -9,6 +9,19 @@
 body{margin:0;font-family:Arial,sans-serif;background:#f3f5f9;color:#202b3c}
 header{background:#172b4d;color:white;padding:17px 25px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
 header h2{margin:0;font-size:21px}
+.header-actions{display:flex;align-items:center;gap:15px}
+.notification-wrap{position:relative}
+.notification-bell{position:relative;background:#29446e;color:white;font-size:21px;padding:8px 12px}
+.notification-count{position:absolute;top:-7px;right:-7px;background:#e53935;color:white;border-radius:20px;min-width:19px;height:19px;font-size:11px;display:none;align-items:center;justify-content:center;padding:0 5px}
+.notification-dropdown{display:none;position:absolute;right:0;top:45px;width:min(360px,90vw);max-height:430px;overflow-y:auto;background:white;color:#202b3c;border-radius:10px;box-shadow:0 8px 28px #0003;z-index:1000}
+.notification-dropdown.open{display:block}
+.notification-heading{padding:13px;border-bottom:1px solid #edf0f5;display:flex;justify-content:space-between;align-items:center}
+.notification-heading button{font-size:11px;padding:7px}
+.notification-item{display:block;width:100%;text-align:left;border-radius:0;background:white;color:#202b3c;border-bottom:1px solid #edf0f5;padding:13px;white-space:normal}
+.notification-item:hover{background:#f1f5ff}
+.notification-item.unread{background:#edf4ff}
+.notification-item small{display:block;color:#718096;margin-top:6px}
+.notification-empty{padding:20px;text-align:center;color:#718096;font-size:13px}
 button{border:0;border-radius:7px;padding:10px 14px;cursor:pointer;font-weight:600}
 .logout{background:#e74c3c;color:white}
 .layout{display:flex;min-height:calc(100vh - 65px)}
@@ -43,8 +56,22 @@ textarea{min-height:70px}
 <body>
 <header>
   <h2>🏨 Hotel Pragati — Admin Panel</h2>
-  <div><span id="adminName">Administrator</span> &nbsp;
-  <button class="logout" onclick="logout()">Logout</button></div>
+  <div class="header-actions">
+    <span id="adminName">Administrator</span>
+    <div class="notification-wrap">
+      <button type="button" class="notification-bell" id="notificationBell" aria-label="Notifications" onclick="toggleNotifications()">🔔
+        <span class="notification-count" id="notificationCount">0</span>
+      </button>
+      <div class="notification-dropdown" id="notificationDropdown">
+        <div class="notification-heading">
+          <strong>Notifications</strong>
+          <button class="muted" type="button" onclick="markAllNotificationsRead()">Mark all read</button>
+        </div>
+        <div id="notificationList"><div class="notification-empty">Loading...</div></div>
+      </div>
+    </div>
+    <button class="logout" onclick="logout()">Logout</button>
+  </div>
 </header>
 
 <div class="layout">
@@ -236,6 +263,95 @@ const date=v=>v?new Date(v).toLocaleString('en-IN'):'—';
 function notice(msg,error=false){$('notice').textContent=msg;$('notice').style.display='block';$('notice').style.background=error?'#ffe5e5':'#e2f7e9';window.scrollTo({top:0,behavior:'smooth'});setTimeout(()=>$('notice').style.display='none',4500)}
 function logout(){localStorage.removeItem('hotel_admin_token');localStorage.removeItem('hotel_admin_name');location.href='login.html'}
 async function api(url,options={}){const r=await fetch(window.API_BASE_URL + url,{...options,headers:{...headers,...options.headers}});let d={};try{d=await r.json()}catch{}if(r.status===401||r.status===403){logout();throw Error('Admin session expired. Please login again.')}if(!r.ok||d.success===false)throw Error(d.message||'Request failed');return d}
+
+let adminNotifications = [];
+
+function toggleNotifications(){
+  $('notificationDropdown').classList.toggle('open');
+  if($('notificationDropdown').classList.contains('open')){
+    loadAdminNotifications();
+  }
+}
+
+function renderAdminNotifications(){
+  const unread = adminNotifications.filter(n => !n.read).length;
+  const badge = $('notificationCount');
+  badge.textContent = unread > 99 ? '99+' : unread;
+  badge.style.display = unread ? 'flex' : 'none';
+
+  if(!adminNotifications.length){
+    $('notificationList').innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+    return;
+  }
+
+  $('notificationList').innerHTML = adminNotifications.map(n => `
+    <button type="button"
+      class="notification-item ${n.read ? '' : 'unread'}"
+      onclick="openAdminNotification('${n._id}')">
+      <strong>${esc(n.title)}</strong>
+      <div>${esc(n.message)}</div>
+      <small>${esc(n.refNo)} · ${date(n.createdAt)}</small>
+    </button>
+  `).join('');
+}
+
+async function loadAdminNotifications(){
+  try{
+    const data = await api('/api/admin/notifications');
+    adminNotifications = data.notifications || [];
+    renderAdminNotifications();
+  }catch(error){
+    console.error('Notification refresh failed:', error);
+  }
+}
+
+async function markAllNotificationsRead(){
+  try{
+    await api('/api/admin/notifications/read-all', {method:'PATCH'});
+    adminNotifications = adminNotifications.map(n => ({...n, read:true}));
+    renderAdminNotifications();
+  }catch(error){
+    notice(error.message, true);
+  }
+}
+
+async function openAdminNotification(id){
+  const item = adminNotifications.find(n => n._id === id);
+  if(!item) return;
+
+  try{
+    if(!item.read){
+      await api('/api/admin/notifications/' + encodeURIComponent(id) + '/read', {method:'PATCH'});
+      item.read = true;
+      renderAdminNotifications();
+    }
+
+    $('notificationDropdown').classList.remove('open');
+
+    const page = item.type === 'booking' ? 'bookings' : 'orders';
+    document.querySelectorAll('nav button').forEach(b => {
+      b.classList.toggle('active', b.dataset.page === page);
+    });
+    document.querySelectorAll('.section').forEach(section => {
+      section.classList.toggle('active', section.id === page);
+    });
+
+    const search = item.type === 'booking' ? $('bookingSearch') : $('orderSearch');
+    search.value = item.refNo;
+    if(item.type === 'booking') renderBookings();
+    else renderOrders();
+  }catch(error){
+    notice(error.message, true);
+  }
+}
+
+document.addEventListener('click', event => {
+  const wrap = document.querySelector('.notification-wrap');
+  if(wrap && !wrap.contains(event.target)){
+    $('notificationDropdown').classList.remove('open');
+  }
+});
+
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.page).classList.add('active')});
 
 function table(headers,rows){return `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows||'<tr><td colspan="12">No records found.</td></tr>'}</tbody></table>`}
@@ -511,6 +627,8 @@ $('reportStartDate').value = reportToday;
 $('reportEndDate').value = reportToday;
 toggleReportDates();
 loadData();
+loadAdminNotifications();
+setInterval(loadAdminNotifications, 15000);
 </script>
 </body>
 </html>

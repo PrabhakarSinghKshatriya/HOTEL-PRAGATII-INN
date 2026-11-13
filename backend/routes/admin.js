@@ -5,6 +5,7 @@ const FoodOrder = require('../models/FoodOrder');
 const FoodItem = require('../models/FoodItem');
 const Room = require('../models/Room');
 const Offer = require('../models/Offer');
+const AdminNotification = require('../models/AdminNotification');
 
 const router = express.Router();
 
@@ -459,6 +460,70 @@ router.delete('/offers/:id', async (req, res) => {
     res.json({ success: true, message: 'Offer deleted' });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Unable to delete offer' });
+  }
+});
+
+
+// Admin notification inbox.
+router.get('/notifications', async (req, res) => {
+  try {
+    const [notifications, unreadCount] = await Promise.all([
+      AdminNotification.find()
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
+      AdminNotification.countDocuments({ read: false })
+    ]);
+
+    res.json({ success: true, notifications, unreadCount });
+  } catch (error) {
+    console.error('Admin notifications:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Unable to fetch notifications'
+    });
+  }
+});
+
+// Mark one notification as read.
+router.patch('/notifications/:id/read', async (req, res) => {
+  try {
+    const notification = await AdminNotification.findByIdAndUpdate(
+      req.params.id,
+      { $set: { read: true } },
+      { new: true }
+    );
+
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification not found'
+      });
+    }
+
+    res.json({ success: true, notification });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: 'Unable to update notification'
+    });
+  }
+});
+
+// Mark all notifications as read.
+router.patch('/notifications/read-all', async (req, res) => {
+  try {
+    await AdminNotification.updateMany(
+      { read: false },
+      { $set: { read: true } }
+    );
+
+    res.json({ success: true, message: 'All notifications marked as read' });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Unable to update notifications'
+    });
   }
 });
 

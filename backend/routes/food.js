@@ -4,6 +4,7 @@ const FoodItem = require('../models/FoodItem');
 const FoodOrder = require('../models/FoodOrder');
 const adminAuth = require('../middleware/adminAuth');
 const createNotification = require('../utils/createNotification');
+const createAdminNotification = require('../utils/createAdminNotification');
 const { getActiveOffer, calculateDiscount } = require('../utils/offerPricing');
 
 const router = express.Router();
@@ -184,6 +185,16 @@ router.post('/orders', async (req, res) => {
       transactionId: paymentMethod === 'UPI' ? String(transactionId).trim() : '',
       paymentStatus: paymentMethod === 'UPI' ? 'Pending' : 'Unpaid',
       paymentVerifiedAt: null
+    });
+
+    await createAdminNotification({
+      type: 'food',
+      refNo: order.refNo,
+      recordId: order._id,
+      customerName: order.customerName,
+      phone: order.customerPhone,
+      title: 'New Food Order',
+      message: `${order.customerName} placed a food order for ${order.table}.`
     });
 
     await createNotification({
