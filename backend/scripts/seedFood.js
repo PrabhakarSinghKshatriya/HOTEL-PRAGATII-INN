@@ -125,17 +125,24 @@ const groups = [
 
 const slug = value => value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 
+
 async function seedFood() {
   try {
     await connectDB();
+
     const items = [];
 
     for (const [category, categoryHindi, entries] of groups) {
       for (const entry of entries) {
         const [name, hindiName, rate, emoji, veg, ingredients = []] = entry;
+
         const item = {
           itemId: slug(category + '-' + name),
-          name, hindiName, category, categoryHindi, emoji,
+          name,
+          hindiName,
+          category,
+          categoryHindi,
+          emoji,
           isVegetarian: Boolean(veg),
           isAvailable: rate !== null,
           ingredients
@@ -143,24 +150,59 @@ async function seedFood() {
 
         if (Array.isArray(rate)) {
           item.price = null;
-          item.priceOptions = { half: rate[0], full: rate[1] };
+          item.priceOptions = {
+            half: rate[0],
+            full: rate[1]
+          };
         } else {
           item.price = rate;
           item.priceOptions = {};
         }
+
         items.push(item);
       }
     }
 
-    await FoodItem.deleteMany({});
-    await FoodItem.insertMany(items);
+    // Prevent accidental production writes.
+    if (process.env.SEED_CONFIRM !== 'YES') {
+      console.log('DRY RUN: No database records modified.');
+      console.log('Target database:', mongoose.connection.name);
+      console.log('Items prepared:', items.length);
 
-    console.log('Food menu seeded successfully.');
-    console.log('Categories:', groups.length);
-    console.log('Total menu items:', items.length);
-    console.log('Items without supplied price:', items.filter(i => i.price === null && !i.priceOptions.half).map(i => i.name));
-    console.log('Half/full items:', items.filter(i => i.priceOptions.half).length);
-    console.log('Thali ingredients:', items.filter(i => i.ingredients.length));
+      const existing = await FoodItem.find({
+        itemId: { $in: items.map(item => item.itemId) }
+      }).select('itemId').lean();
+
+      console.log('Already existing:', existing.length);
+      console.log('Missing items:', items.length - existing.length);
+      return;
+    }
+
+    const operations = items.map(item => ({
+      updateOne: {
+        filter: { itemId: item.itemId },
+        update: {
+          $setOnInsert: item
+        },
+        upsert: true
+      }
+    }));
+
+    const result = await FoodItem.bulkWrite(operations, {
+      ordered: false
+    });
+
+    const total = await FoodItem.countDocuments();
+
+    console.log('\\n===== SAFE FOOD SEED RESULT =====');
+    console.log('Target database:', mongoose.connection.name);
+    console.log('Seed definitions:', items.length);
+    console.log('New items inserted:', result.upsertedCount);
+    console.log('Existing items preserved:', result.matchedCount);
+    console.log('Total menu records:', total);
+    console.log('Operation: Non-destructive upsert');
+    console.log('Admin-created items: Preserved');
+
   } catch (error) {
     console.error('Food seeding failed:', error);
     process.exitCode = 1;
