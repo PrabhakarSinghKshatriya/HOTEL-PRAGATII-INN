@@ -1,0 +1,23 @@
+node_modules/
+.env
+.DS_Store
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Temporary backups and patch files
+*.before_*
+*.backup*
+.patch-backups/
+
+# OS files
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Environment files
+.env*
+!.env.example
+
+# Runtime files
+*.log

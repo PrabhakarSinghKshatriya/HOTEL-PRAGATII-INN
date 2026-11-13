@@ -1366,3 +1366,162 @@ footer {
 .mt-16 { margin-top: 16px; }
 .mt-24 { margin-top: 24px; }
 .mb-0 { margin-bottom: 0 !important; }
+
+/* Database-driven Hotel Pragati menu */
+.menu-price-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.menu-variant-select {
+  max-width: 150px;
+  padding: 6px 8px;
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.menu-hindi-name {
+  display: block;
+  font-size: .82em;
+  font-weight: 500;
+  opacity: .78;
+  margin-top: 3px;
+}
+
+.menu-ingredients {
+  font-size: .76rem;
+  line-height: 1.45;
+  opacity: .8;
+  margin-top: 5px;
+}
+
+.menu-item-unavailable {
+  opacity: .62;
+}
+
+.menu-item-unavailable .btn-add {
+  cursor: not-allowed;
+  font-size: .72rem;
+  padding: 7px 9px;
+}
+
+.menu-load-message {
+  padding: 24px;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+
+/* Admin Login Navbar */
+.nav-links .admin-nav-link {
+  color: var(--gold-light);
+  border: 1px solid rgba(201,151,58,0.55);
+  border-radius: 7px;
+  padding: 8px 13px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.nav-links .admin-nav-link:hover {
+  background: var(--gold);
+  color: #fff;
+}
+
+@media(max-width: 900px) {
+  .nav-links .admin-nav-link {
+    display: block;
+    margin: 5px 0;
+  }
+}
+
+
+
+/* Food order panel: mobile full-content scrolling fix */
+@media (max-width: 900px) {
+  .order-panel {
+    height: auto !important;
+    max-height: 85dvh !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .order-panel.open {
+    transform: translateY(0);
+  }
+
+  .order-panel .cart-items {
+    flex: 0 0 auto;
+    overflow: visible;
+    min-height: 80px;
+  }
+
+  .order-panel .order-bill {
+    position: static !important;
+    flex: 0 0 auto;
+    width: 100%;
+    z-index: auto;
+  }
+
+  .order-panel #foodUpiDetails {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 10px 16px;
+  }
+
+  .order-panel .btn-place-order {
+    position: static;
+    min-height: 52px;
+  }
+}
+
+/* FOOD CHECKOUT: QR, CART AND PLACE ORDER VISIBILITY FIX */
+.order-panel {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.order-panel .cart-items {
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  min-height: 80px;
+}
+
+.order-panel .order-bill {
+  display: block;
+  flex: 0 0 auto !important;
+  width: 100%;
+}
+
+.order-panel #foodUpiDetails {
+  flex: 0 0 auto !important;
+  width: auto;
+}
+
+.order-panel .btn-place-order {
+  display: flex !important;
+  width: 100%;
+  min-height: 52px;
+  visibility: visible !important;
+}
+
+@media (max-width: 900px) {
+  .order-panel {
+    max-height: 85dvh !important;
+    overflow-y: auto !important;
+  }
+
+  .order-panel.open {
+    transform: translateY(0);
+  }
+}

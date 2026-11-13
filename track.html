@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track Booking / Order | Hotel Pragati</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.track-page{min-height:70vh;padding:65px 18px;background:var(--ivory,#f8f4ec)}
+.track-box{max-width:720px;margin:auto;background:#fff;padding:32px;border-radius:14px;box-shadow:0 8px 35px #00000012}
+.track-box h1{text-align:center;color:var(--espresso,#302619)}
+.track-box>p{text-align:center;color:#777}
+.track-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:28px 0}
+.track-form label{display:block;font-weight:600;margin-bottom:7px}
+.track-form input{width:100%;padding:13px;border:1px solid #ddd;border-radius:7px}
+.track-form button{grid-column:1/-1;padding:14px;background:#9c7029;color:white;border:0;border-radius:7px;font-weight:700;cursor:pointer}
+.track-status{display:none;margin-top:25px}
+.status-card{background:#f8f4ec;padding:20px;border-radius:10px;border-left:5px solid #b88632}
+.status-card strong{font-size:23px;color:#8b6424}
+.notification{padding:15px 4px;border-bottom:1px solid #eee}
+.notification:last-child{border-bottom:0}
+.notification h4{margin:0 0 6px;color:#302619}
+.notification p{margin:0;color:#666;line-height:1.5}
+.notification small{display:block;margin-top:7px;color:#999}
+.track-error{color:#c0392b;margin-top:12px}
+.track-muted{color:#888;text-align:center;padding:15px}
+@media(max-width:600px){.track-form{grid-template-columns:1fr}.track-box{padding:22px 17px}}
+</style>
+</head>
+<body>
+<div class="track-page">
+  <section class="track-box">
+    <h1>Track Your Booking / Order</h1>
+    <p>Enter your reference number and registered mobile number.</p>
+
+    <form id="trackForm" class="track-form">
+      <div>
+        <label for="refNo">Reference Number</label>
+        <input id="refNo" required placeholder="e.g. BK-XXXXXXXX or ORD-XXXXXXXX">
+      </div>
+      <div>
+        <label for="phone">10-digit Mobile Number</label>
+        <input id="phone" required inputmode="numeric" maxlength="10"
+          pattern="[0-9]{10}" placeholder="Enter mobile number">
+      </div>
+      <button id="trackButton" type="submit">Track Status</button>
+    </form>
+
+    <div id="trackError" class="track-error" role="alert"></div>
+
+    <section id="trackStatus" class="track-status">
+      <div class="status-card">
+        <p id="recordType"></p>
+        <p>Reference: <strong id="reference"></strong></p>
+        <p>Current Status: <strong id="currentStatus"></strong></p>
+        <small id="lastUpdated"></small>
+      </div>
+      <h3>Notification History</h3>
+      <div id="notificationList"></div>
+      <p class="track-muted">Status automatically refreshes every 15 seconds.</p>
+    </section>
+  </section>
+</div>
+
+<script>
+const form = document.getElementById('trackForm');
+const refInput = document.getElementById('refNo');
+const phoneInput = document.getElementById('phone');
+const errorBox = document.getElementById('trackError');
+const statusBox = document.getElementById('trackStatus');
+const button = document.getElementById('trackButton');
+
+let refreshTimer = null;
+let activeRef = '';
+let activePhone = '';
+
+function addText(parent, tag, value, className) {
+  const element = document.createElement(tag);
+  element.textContent = value || '';
+  if (className) element.className = className;
+  parent.appendChild(element);
+  return element;
+}
+
+async function fetchTracking(showErrors = true) {
+  if (!activeRef || !activePhone) return;
+
+  try {
+    const response = await fetch(
+      '/api/notifications/' + encodeURIComponent(activeRef) +
+      '?phone=' + encodeURIComponent(activePhone),
+      { cache: 'no-store' }
+    );
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Unable to find this booking/order.');
+    }
+
+    document.getElementById('recordType').textContent =
+      data.recordType === 'food' ? 'Food Order' : 'Room Booking';
+
+    document.getElementById('reference').textContent = data.reference;
+    document.getElementById('currentStatus').textContent = data.currentStatus;
+    document.getElementById('lastUpdated').textContent =
+      'Last checked: ' + new Date().toLocaleTimeString('en-IN');
+
+    const list = document.getElementById('notificationList');
+    list.replaceChildren();
+
+    if (!data.notifications || !data.notifications.length) {
+      addText(list, 'p', 'No notifications available yet.', 'track-muted');
+    } else {
+      data.notifications.forEach(item => {
+        const card = document.createElement('article');
+        card.className = 'notification';
+        addText(card, 'h4', item.title);
+        addText(card, 'p', item.message);
+        addText(
+          card,
+          'small',
+          new Date(item.createdAt).toLocaleString('en-IN')
+        );
+        list.appendChild(card);
+      });
+    }
+
+    statusBox.style.display = 'block';
+    errorBox.textContent = '';
+  } catch (error) {
+    if (showErrors) {
+      statusBox.style.display = 'none';
+      errorBox.textContent = error.message;
+    }
+  }
+}
+
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+
+  const ref = refInput.value.trim();
+  const phone = phoneInput.value.trim();
+
+  if (!ref || !/^[0-9]{10}$/.test(phone)) {
+    errorBox.textContent = 'Please enter a valid reference number and 10-digit mobile number.';
+    return;
+  }
+
+  activeRef = ref;
+  activePhone = phone;
+  button.disabled = true;
+  button.textContent = 'Checking...';
+
+  if (refreshTimer) clearInterval(refreshTimer);
+
+  await fetchTracking(true);
+  refreshTimer = setInterval(() => fetchTracking(false), 15000);
+
+  button.disabled = false;
+  button.textContent = 'Track Status';
+});
+
+const params = new URLSearchParams(location.search);
+if (params.has('ref')) refInput.value = params.get('ref');
+if (params.has('phone')) phoneInput.value = params.get('phone');
+if (refInput.value && phoneInput.value) {
+  form.requestSubmit();
+}
+</script>
+</body>
+</html>

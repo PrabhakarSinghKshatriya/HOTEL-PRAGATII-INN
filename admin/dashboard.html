@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hotel Pragati | Admin Dashboard</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f5f9;color:#202b3c}
+header{background:#172b4d;color:white;padding:17px 25px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+header h2{margin:0;font-size:21px}
+button{border:0;border-radius:7px;padding:10px 14px;cursor:pointer;font-weight:600}
+.logout{background:#e74c3c;color:white}
+.layout{display:flex;min-height:calc(100vh - 65px)}
+nav{width:220px;background:#fff;padding:18px 12px;box-shadow:2px 0 8px #00000008;flex-shrink:0}
+nav button{display:block;width:100%;text-align:left;background:transparent;padding:13px;margin-bottom:5px;color:#34445c}
+nav button.active,nav button:hover{background:#eaf0ff;color:#2455c5}
+main{padding:25px;width:100%;min-width:0}
+.section{display:none}.section.active{display:block}
+h2{margin-top:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:15px;margin:20px 0}
+.card,.panel{background:white;padding:18px;border-radius:11px;box-shadow:0 2px 12px #172b4d0b}
+.card small{color:#718096}.card strong{display:block;font-size:27px;margin-top:10px;color:#244fa5}
+.panel{margin:17px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #edf0f5;font-size:13px;vertical-align:middle}
+th{background:#f7f8fb;color:#53627a}
+input,select,textarea{padding:10px;border:1px solid #dce1ea;border-radius:7px;width:100%;font:inherit;background:white}
+textarea{min-height:70px}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.formgrid label{font-size:12px;color:#53627a;display:block;margin-bottom:5px}
+.primary{background:#2455c5;color:white}.success{background:#16834b;color:white}
+.danger{background:#d94141;color:white}.muted{background:#e9edf4;color:#34445c}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.actions button{padding:7px 9px;font-size:12px}
+.badge{padding:5px 8px;border-radius:20px;background:#edf1f8;font-size:11px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}
+.toolbar input,.toolbar select{max-width:230px}
+.message{padding:12px;border-radius:7px;background:#fff4d9;margin:10px 0;display:none}
+@media(max-width:750px){.layout{display:block}nav{width:100%;display:grid;grid-template-columns:repeat(2,1fr)}nav button{margin:2px}main{padding:13px}}
+</style>
+</head>
+<body>
+<header>
+  <h2>🏨 Hotel Pragati — Admin Panel</h2>
+  <div><span id="adminName">Administrator</span> &nbsp;
+  <button class="logout" onclick="logout()">Logout</button></div>
+</header>
+
+<div class="layout">
+<nav>
+  <button class="active" data-page="overview">📊 Overview</button>
+  <button data-page="bookings">🛏️ Room Bookings</button>
+  <button data-page="rooms">🏨 Room Management</button>
+  <button data-page="orders">🍽️ Food Orders</button>
+  <button data-page="menu">📋 Food Menu</button>
+  <button data-page="offers">🎁 Offers Management</button>
+  <button data-page="customers">👥 Customers</button>
+  <button data-page="payments">💳 Payments</button>
+  <button data-page="reports">📈 Reports</button>
+</nav>
+
+<main>
+<div id="notice" class="message"></div>
+
+<section id="overview" class="section active">
+<h2>Dashboard Overview</h2>
+<div class="cards" id="stats"></div>
+<div class="panel"><h3>Recent Room Bookings</h3><div id="recentBookings"></div></div>
+<div class="panel"><h3>Recent Food Orders</h3><div id="recentOrders"></div></div>
+</section>
+
+<section id="bookings" class="section">
+<h2>Room Bookings Management</h2>
+<div class="toolbar"><input id="bookingSearch" placeholder="Search name, phone or reference..." oninput="renderBookings()">
+<select id="bookingFilter" onchange="renderBookings()"><option value="">All statuses</option><option>Pending</option><option>Confirmed</option><option>Checked-in</option><option>Completed</option><option>Cancelled</option></select></div>
+<div class="panel" id="bookingTable"></div>
+</section>
+
+<section id="rooms" class="section">
+<h2>Room Management</h2>
+<div class="panel">
+<h3 id="roomFormTitle">Add New Room</h3>
+<form id="roomForm">
+<input type="hidden" id="roomId">
+<div class="formgrid">
+<label>Room Number<input id="roomNumber" type="number" min="1" required></label>
+<label>Room Type<select id="roomType"><option>AC</option><option>Non-AC</option></select></label>
+<label>Room Name<input id="roomName" required placeholder="AC Deluxe / Non-AC"></label>
+<label>Price per night (₹)<input id="roomPrice" type="number" min="0" required></label>
+<label>Image URL<input id="roomImage" placeholder="Image URL"></label>
+<label>Amenities<input id="roomAmenities" placeholder="WiFi, TV, Geyser"></label>
+<label style="grid-column:1/-1">Description<textarea id="roomDescription"></textarea></label>
+</div><br>
+<button class="primary" type="submit">Save Room</button>
+<button class="muted" type="button" onclick="resetRoomForm()">Clear</button>
+</form></div>
+<div class="panel"><h3>All Rooms</h3><div id="roomTable"></div></div>
+</section>
+
+<section id="orders" class="section">
+<h2>Food Orders Management</h2>
+<div class="toolbar"><input id="orderSearch" placeholder="Search customer, phone or reference..." oninput="renderOrders()">
+<select id="orderFilter" onchange="renderOrders()"><option value="">All statuses</option><option>Received</option><option>Preparing</option><option>Ready</option><option>Served</option><option>Cancelled</option></select></div>
+<div class="panel" id="orderTable"></div>
+</section>
+
+<section id="menu" class="section">
+<h2>Food Menu Management</h2>
+<div class="panel">
+<h3 id="menuFormTitle">Add Menu Item</h3>
+<form id="menuForm">
+<input type="hidden" id="menuId">
+<div class="formgrid">
+<label>Unique Item ID<input id="itemId" required placeholder="e.g. paneer-tikka"></label>
+<label>English Name<input id="itemName" required></label>
+<label>Hindi Name<input id="itemHindi"></label>
+<label>Category<input id="itemCategory" required placeholder="Main Course"></label>
+<label>Hindi Category<input id="itemCategoryHindi"></label>
+<label>Single Price (₹)<input id="itemPrice" type="number" min="0" placeholder="Leave blank if not applicable"></label>
+<label>Half Price (₹)<input id="halfPrice" type="number" min="0"></label>
+<label>Full Price (₹)<input id="fullPrice" type="number" min="0"></label>
+<label>Emoji<input id="itemEmoji" placeholder="🍽️"></label>
+<label>Vegetarian<select id="itemVeg"><option value="true">Yes</option><option value="false">No</option></select></label>
+<label>Available<select id="itemAvailable"><option value="true">Yes</option><option value="false">No</option></select></label>
+<label style="grid-column:1/-1">Description<input id="itemDescription"></label>
+</div><br>
+<button class="primary" type="submit">Save Menu Item</button>
+<button class="muted" type="button" onclick="resetMenuForm()">Clear</button>
+</form></div>
+<div class="panel"><h3>Complete Menu</h3><div id="menuTable"></div></div>
+</section>
+
+<section id="offers" class="section">
+<h2>🎁 Offers Management</h2>
+
+<div class="panel">
+  <h3 id="offerFormTitle">Create New Offer</h3>
+  <form id="offerForm">
+    <input type="hidden" id="offerId">
+
+    <div class="formgrid">
+      <label>Offer Title
+        <input id="offerTitle" maxlength="100" required placeholder="e.g. Diwali Special">
+      </label>
+
+      <label>Offer Category
+        <select id="offerScope" required>
+          <option value="room">Room Booking</option>
+          <option value="food">Food Orders</option>
+        </select>
+      </label>
+
+      <label>Discount Type
+        <select id="offerDiscountType" required>
+          <option value="percentage">Percentage (%)</option>
+          <option value="fixed">Fixed Amount (₹)</option>
+        </select>
+      </label>
+
+      <label>Discount Value
+        <input id="offerDiscountValue" type="number" min="0.01" step="0.01" required placeholder="e.g. 10">
+      </label>
+
+      <label>Start Date & Time
+        <input id="offerStartsAt" type="datetime-local" required>
+      </label>
+
+      <label>Expiry Date & Time
+        <input id="offerExpiresAt" type="datetime-local" required>
+      </label>
+
+      <label>Offer Status
+        <select id="offerIsActive">
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
+      </label>
+    </div>
+
+    <br>
+    <button class="primary" type="submit" id="offerSaveButton">Save Offer</button>
+    <button class="muted" type="button" onclick="resetOfferForm()">Clear</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h3>All Offers</h3>
+  <div id="offerTable">Loading offers...</div>
+</div>
+</section>
+
+<section id="customers" class="section">
+<h2>Customer Directory</h2>
+<div class="panel" id="customerTable"></div>
+</section>
+
+<section id="payments" class="section">
+<h2>Payment Management</h2>
+<div class="toolbar"><select id="paymentFilter" onchange="renderPayments()"><option value="">All payment statuses</option><option>Unpaid</option><option>Pending</option><option>Paid</option><option>Refunded</option></select></div>
+<div class="panel"><h3>Room Booking Payments</h3><div id="bookingPayments"></div></div>
+<div class="panel"><h3>Food Order Payments</h3><div id="foodPayments"></div></div>
+</section>
+
+<section id="reports" class="section">
+<h2>Reports</h2>
+<div class="toolbar">
+  <select id="reportMode" onchange="toggleReportDates()">
+    <option value="single">Single Date Report</option>
+    <option value="range">Date Range Report</option>
+  </select>
+  <input type="date" id="reportDate" aria-label="Report date">
+  <input type="date" id="reportStartDate" aria-label="From date" style="display:none">
+  <input type="date" id="reportEndDate" aria-label="To date" style="display:none">
+  <button class="primary" onclick="loadData()">Generate Report</button>
+  <button class="muted" onclick="window.print()">Print Report</button>
+</div>
+<div class="cards" id="reportStats"></div>
+<div class="panel"><h3>Room Bookings</h3><div id="reportBookings"></div></div>
+<div class="panel"><h3>Food Orders</h3><div id="reportOrders"></div></div>
+</section>
+</main>
+</div>
+
+<script>
+const token=localStorage.getItem('hotel_admin_token');
+if(!token) location.replace('login.html');
+document.getElementById('adminName').textContent=localStorage.getItem('hotel_admin_name')||'Administrator';
+const headers={'Content-Type':'application/json','Authorization':'Bearer '+token};
+let state={bookings:[],orders:[],rooms:[],menu:[],offers:[],customers:[],summary:{}};
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=v=>'₹'+Number(v||0).toLocaleString('en-IN');
+const date=v=>v?new Date(v).toLocaleString('en-IN'):'—';
+function notice(msg,error=false){$('notice').textContent=msg;$('notice').style.display='block';$('notice').style.background=error?'#ffe5e5':'#e2f7e9';window.scrollTo({top:0,behavior:'smooth'});setTimeout(()=>$('notice').style.display='none',4500)}
+function logout(){localStorage.removeItem('hotel_admin_token');localStorage.removeItem('hotel_admin_name');location.href='login.html'}
+async function api(url,options={}){const r=await fetch(url,{...options,headers:{...headers,...options.headers}});let d={};try{d=await r.json()}catch{}if(r.status===401||r.status===403){logout();throw Error('Admin session expired. Please login again.')}if(!r.ok||d.success===false)throw Error(d.message||'Request failed');return d}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.page).classList.add('active')});
+
+function table(headers,rows){return `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows||'<tr><td colspan="12">No records found.</td></tr>'}</tbody></table>`}
+function statusSelect(value,values,fn){return `<select onchange="${fn}(this)" data-old="${esc(value)}">${values.map(v=>`<option ${v===value?'selected':''}>${v}</option>`).join('')}</select>`}
+
+function renderOverview(){
+const s=state.summary;
+const items=[['Total Bookings',s.totalBookings],['Pending Bookings',s.pendingBookings],['Confirmed',s.confirmedBookings],['Checked In',s.checkedInBookings],['Completed',s.completedBookings],['Total Food Orders',s.totalOrders],['Pending Food Orders',s.pendingOrders],['Available Rooms',s.availableRooms],['Occupied Rooms',s.occupiedRooms],['Today Collection',money(s.todayCollection)]];
+$('stats').innerHTML=items.map(([a,b])=>`<div class="card"><small>${a}</small><strong>${b??0}</strong></div>`).join('');
+$('recentBookings').innerHTML=table(['Reference','Customer','Room','Dates','Amount','Status'],state.bookings.slice(0,5).map(b=>`<tr><td>${esc(b.refNo)}</td><td>${esc(b.name)}<br>${esc(b.phone)}</td><td>${esc(b.roomNumber)}</td><td>${date(b.checkin)}</td><td>${money(b.total)}</td><td>${esc(b.status)}</td></tr>`).join(''));
+$('recentOrders').innerHTML=table(['Reference','Customer','Location','Amount','Status'],state.orders.slice(0,5).map(o=>`<tr><td>${esc(o.refNo)}</td><td>${esc(o.customerName)}<br>${esc(o.customerPhone)}</td><td>${esc(o.table)}</td><td>${money(o.total)}</td><td>${esc(o.status)}</td></tr>`).join(''));
+}
+
+function renderBookings(){
+const q=($('bookingSearch').value||'').toLowerCase(),f=$('bookingFilter').value;
+const rows=state.bookings.filter(b=>(!f||b.status===f)&&[b.name,b.phone,b.refNo].some(x=>String(x||'').toLowerCase().includes(q))).map(b=>`<tr>
+<td>${esc(b.refNo)}</td><td>${esc(b.name)}<br>${esc(b.phone)}</td><td>${esc(b.roomName)} (#${esc(b.roomNumber)})</td>
+<td>${date(b.checkin)}<br>to ${date(b.checkout)}</td><td>${b.nights||0}</td><td>${money(b.total)}</td>
+<td>${statusSelect(b.status,['Pending','Confirmed','Checked-in','Completed','Cancelled'],'bookingStatus')}</td><td>${esc(b.paymentStatus)}</td></tr>`).join('');
+$('bookingTable').innerHTML=table(['Reference','Customer','Room','Check-in / Checkout','Nights','Total','Update Status','Payment'],rows);
+}
+async function bookingStatus(el){const row=el.closest('tr'),id=state.bookings.find(b=>b.refNo===row.cells[0].textContent)?._id;if(!id)return;try{await api('/api/bookings/admin/'+id+'/status',{method:'PATCH',body:JSON.stringify({status:el.value})});notice('Booking status updated. Customer notification has been recorded.');await loadData()}catch(e){notice(e.message,true);loadData()}}
+
+function renderOrders(){
+const q=($('orderSearch').value||'').toLowerCase(),f=$('orderFilter').value;
+const rows=state.orders.filter(o=>(!f||o.status===f)&&[o.customerName,o.customerPhone,o.refNo].some(x=>String(x||'').toLowerCase().includes(q))).map(o=>`<tr>
+<td>${esc(o.refNo)}</td><td>${esc(o.customerName)}<br>${esc(o.customerPhone)}</td><td>${esc(o.table)}</td>
+<td>${(o.items||[]).map(i=>`${esc(i.name)} (${esc(i.variant)}) × ${i.qty}`).join('<br>')}</td><td>${money(o.total)}</td>
+<td>${statusSelect(o.status,['Received','Preparing','Ready','Served','Cancelled'],'foodStatus')}</td><td>${esc(o.paymentStatus)}</td><td>${date(o.createdAt)}</td></tr>`).join('');
+$('orderTable').innerHTML=table(['Reference','Customer','Location','Items','Total','Update Status','Payment','Date'],rows);
+}
+async function foodStatus(el){const ref=el.closest('tr').cells[0].textContent,id=state.orders.find(o=>o.refNo===ref)?._id;if(!id)return;try{await api('/api/food/orders/admin/'+id+'/status',{method:'PATCH',body:JSON.stringify({status:el.value})});notice('Food order status updated. Customer notification has been recorded.');await loadData()}catch(e){notice(e.message,true);loadData()}}
+
+function renderRooms(){
+$('roomTable').innerHTML=table(['Room','Type','Price','Status','Active','Actions'],state.rooms.map(r=>`<tr>
+<td>${esc(r.roomNumber)}<br>${esc(r.name)}</td><td>${esc(r.roomType)}</td><td>${money(r.price)}</td>
+<td>${statusSelect(r.status,['Available','Occupied','Maintenance'],'roomStatus')}</td><td>${r.isActive?'Yes':'No'}</td>
+<td><div class="actions"><button class="primary" onclick="editRoom('${r._id}')">Edit</button><button class="muted" onclick="toggleRoom('${r._id}',${!r.isActive})">${r.isActive?'Deactivate':'Activate'}</button></div></td></tr>`).join(''));
+}
+async function roomStatus(el){const r=state.rooms.find(x=>x.status===el.dataset.old&&x.roomNumber===Number(el.closest('tr').cells[0].textContent.split('<')[0]));const id=state.rooms.find(x=>x.roomNumber===Number(el.closest('tr').cells[0].textContent.match(/\d+/)?.[0]))?._id;if(!id)return;try{await api('/api/admin/rooms/'+id,{method:'PATCH',body:JSON.stringify({status:el.value})});notice('Room status updated.');await loadData()}catch(e){notice(e.message,true);loadData()}}
+function editRoom(id){const r=state.rooms.find(x=>x._id===id);if(!r)return;$('roomId').value=id;$('roomNumber').value=r.roomNumber;$('roomNumber').disabled=true;$('roomType').value=r.roomType;$('roomName').value=r.name||'';$('roomPrice').value=r.price;$('roomImage').value=r.image||'';$('roomAmenities').value=(r.amenities||[]).join(', ');$('roomDescription').value=r.description||'';$('roomFormTitle').textContent='Edit Room';$('roomForm').scrollIntoView({behavior:'smooth'})}
+function resetRoomForm(){$('roomForm').reset();$('roomId').value='';$('roomNumber').disabled=false;$('roomFormTitle').textContent='Add New Room'}
+$('roomForm').onsubmit=async e=>{e.preventDefault();const id=$('roomId').value;const body={roomNumber:Number($('roomNumber').value),roomType:$('roomType').value,name:$('roomName').value,price:Number($('roomPrice').value),image:$('roomImage').value,amenities:$('roomAmenities').value.split(',').map(x=>x.trim()).filter(Boolean),description:$('roomDescription').value};try{await api(id?'/api/admin/rooms/'+id:'/api/admin/rooms',{method:id?'PATCH':'POST',body:JSON.stringify(body)});notice(id?'Room updated.':'Room added.');resetRoomForm();await loadData()}catch(e){notice(e.message,true)}};
+async function toggleRoom(id,active){try{if(!active){if(!confirm('Deactivate this room? Existing booking history will be preserved.'))return;await api('/api/admin/rooms/'+id,{method:'DELETE'})}else await api('/api/admin/rooms/'+id,{method:'PATCH',body:JSON.stringify({isActive:true})});notice('Room updated.');await loadData()}catch(e){notice(e.message,true)}}
+
+function renderMenu(){
+$('menuTable').innerHTML=table(['Item','Category','Prices','Available','Actions'],state.menu.map(m=>`<tr><td>${esc(m.emoji)} ${esc(m.name)}<br>${esc(m.hindiName)}</td><td>${esc(m.category)}<br>${esc(m.categoryHindi)}</td><td>${m.price!=null?money(m.price):'—'}<br>Half: ${m.priceOptions?.half!=null?money(m.priceOptions.half):'—'} | Full: ${m.priceOptions?.full!=null?money(m.priceOptions.full):'—'}</td><td>${m.isAvailable?'Yes':'No'}</td><td><div class="actions"><button class="primary" onclick="editMenu('${m._id}')">Edit</button><button class="muted" onclick="toggleMenu('${m._id}',${!m.isAvailable})">${m.isAvailable?'Disable':'Enable'}</button></div></td></tr>`).join(''));
+}
+function editMenu(id){const m=state.menu.find(x=>x._id===id);if(!m)return;$('menuId').value=id;$('itemId').value=m.itemId;$('itemId').disabled=true;$('itemName').value=m.name||'';$('itemHindi').value=m.hindiName||'';$('itemCategory').value=m.category||'';$('itemCategoryHindi').value=m.categoryHindi||'';$('itemPrice').value=m.price??'';$('halfPrice').value=m.priceOptions?.half??'';$('fullPrice').value=m.priceOptions?.full??'';$('itemEmoji').value=m.emoji||'';$('itemVeg').value=String(m.isVegetarian);$('itemAvailable').value=String(m.isAvailable);$('itemDescription').value=m.description||'';$('menuFormTitle').textContent='Edit Menu Item';$('menuForm').scrollIntoView({behavior:'smooth'})}
+function resetMenuForm(){$('menuForm').reset();$('menuId').value='';$('itemId').disabled=false;$('menuFormTitle').textContent='Add Menu Item'}
+$('menuForm').onsubmit=async e=>{e.preventDefault();const id=$('menuId').value;const priceOptions={};if($('halfPrice').value!=='')priceOptions.half=Number($('halfPrice').value);if($('fullPrice').value!=='')priceOptions.full=Number($('fullPrice').value);const price=$('itemPrice').value;const body={itemId:$('itemId').value.trim(),name:$('itemName').value.trim(),hindiName:$('itemHindi').value,category:$('itemCategory').value.trim(),categoryHindi:$('itemCategoryHindi').value,price:price===''?null:Number(price),priceOptions,emoji:$('itemEmoji').value||'🍽️',isVegetarian:$('itemVeg').value==='true',isAvailable:$('itemAvailable').value==='true',description:$('itemDescription').value};try{await api(id?'/api/food/menu/admin/'+id:'/api/food/menu/admin',{method:id?'PATCH':'POST',body:JSON.stringify(body)});notice(id?'Menu item updated.':'Menu item added.');resetMenuForm();await loadData()}catch(e){notice(e.message,true)}};
+async function toggleMenu(id,active){try{if(active)await api('/api/food/menu/admin/'+id,{method:'PATCH',body:JSON.stringify({isAvailable:true})});else await api('/api/food/menu/admin/'+id,{method:'DELETE'});notice('Menu availability updated.');await loadData()}catch(e){notice(e.message,true)}}
+
+function localDateTime(value){
+  if(!value) return '';
+  const d = new Date(value);
+  if(isNaN(d)) return '';
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0,16);
+}
+
+function renderOffers(){
+  const now = Date.now();
+
+  $('offerTable').innerHTML = table(
+    ['Offer','Category','Discount','Start','Expiry','Status','Actions'],
+    state.offers.map(o => {
+      const start = new Date(o.startsAt).getTime();
+      const end = new Date(o.expiresAt).getTime();
+
+      let status = 'Inactive';
+      if(o.isActive && now < start) status = 'Scheduled';
+      else if(o.isActive && now >= start && now < end) status = 'Active';
+      else if(o.isActive && now >= end) status = 'Expired';
+
+      const discount = o.discountType === 'percentage'
+        ? `${Number(o.discountValue)}%`
+        : money(o.discountValue);
+
+      return `<tr>
+        <td>${esc(o.title)}</td>
+        <td>${o.scope === 'room' ? 'Room Booking' : 'Food Orders'}</td>
+        <td>${discount}</td>
+        <td>${date(o.startsAt)}</td>
+        <td>${date(o.expiresAt)}</td>
+        <td>${status}</td>
+        <td><div class="actions">
+          <button class="primary" onclick="editOffer('${o._id}')">Edit</button>
+          <button class="muted" onclick="toggleOffer('${o._id}',${!o.isActive})">${o.isActive?'Deactivate':'Activate'}</button>
+          <button class="muted" onclick="deleteOffer('${o._id}')">Delete</button>
+        </div></td>
+      </tr>`;
+    }).join('')
+  );
+}
+
+function resetOfferForm(){
+  $('offerForm').reset();
+  $('offerId').value = '';
+  $('offerIsActive').value = 'true';
+  $('offerFormTitle').textContent = 'Create New Offer';
+  $('offerSaveButton').textContent = 'Save Offer';
+}
+
+function editOffer(id){
+  const o = state.offers.find(x => x._id === id);
+  if(!o) return;
+
+  $('offerId').value = o._id;
+  $('offerTitle').value = o.title || '';
+  $('offerScope').value = o.scope;
+  $('offerDiscountType').value = o.discountType;
+  $('offerDiscountValue').value = o.discountValue;
+  $('offerStartsAt').value = localDateTime(o.startsAt);
+  $('offerExpiresAt').value = localDateTime(o.expiresAt);
+  $('offerIsActive').value = String(o.isActive);
+
+  $('offerFormTitle').textContent = 'Edit Offer';
+  $('offerSaveButton').textContent = 'Update Offer';
+  $('offerForm').scrollIntoView({behavior:'smooth'});
+}
+
+$('offerForm').onsubmit = async e => {
+  e.preventDefault();
+
+  const id = $('offerId').value;
+  const startsAt = $('offerStartsAt').value;
+  const expiresAt = $('offerExpiresAt').value;
+  const value = Number($('offerDiscountValue').value);
+
+  if(!startsAt || !expiresAt || new Date(expiresAt) <= new Date(startsAt)){
+    notice('Expiry date must be later than start date.', true);
+    return;
+  }
+
+  if(!Number.isFinite(value) || value <= 0 ||
+     ($('offerDiscountType').value === 'percentage' && value > 100)){
+    notice('Please enter a valid discount value. Percentage cannot exceed 100.', true);
+    return;
+  }
+
+  const body = {
+    title: $('offerTitle').value.trim(),
+    scope: $('offerScope').value,
+    discountType: $('offerDiscountType').value,
+    discountValue: value,
+    startsAt: new Date(startsAt).toISOString(),
+    expiresAt: new Date(expiresAt).toISOString(),
+    isActive: $('offerIsActive').value === 'true'
+  };
+
+  try{
+    await api(id ? '/api/admin/offers/' + id : '/api/admin/offers', {
+      method: id ? 'PATCH' : 'POST',
+      body: JSON.stringify(body)
+    });
+
+    notice(id ? 'Offer updated successfully.' : 'New offer created successfully.');
+    resetOfferForm();
+    await loadData();
+  }catch(error){
+    notice(error.message, true);
+  }
+};
+
+async function toggleOffer(id, isActive){
+  try{
+    await api('/api/admin/offers/' + id, {
+      method: 'PATCH',
+      body: JSON.stringify({isActive})
+    });
+    notice(isActive ? 'Offer activated.' : 'Offer deactivated.');
+    await loadData();
+  }catch(error){
+    notice(error.message, true);
+  }
+}
+
+async function deleteOffer(id){
+  const offer = state.offers.find(x => x._id === id);
+  if(!offer) return;
+
+  if(!confirm('Delete offer "' + offer.title + '" permanently?')) return;
+
+  try{
+    await api('/api/admin/offers/' + id, {method:'DELETE'});
+    notice('Offer deleted successfully.');
+    await loadData();
+  }catch(error){
+    notice(error.message, true);
+  }
+}
+
+function renderCustomers(){
+$('customerTable').innerHTML=table(['Customer','Phone','Room Bookings','Food Orders','Booking Amount','Food Amount','Last Activity'],state.customers.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${c.bookings||0}</td><td>${c.foodOrders||0}</td><td>${money(c.bookingAmount)}</td><td>${money(c.foodAmount)}</td><td>${date(c.lastActivity)}</td></tr>`).join(''));
+}
+function renderPayments(){
+const f=$('paymentFilter').value;
+$('bookingPayments').innerHTML=table(['Reference','Customer','Total','Payment Status','Update'],state.bookings.filter(b=>!f||b.paymentStatus===f).map(b=>`<tr><td>${esc(b.refNo)}</td><td>${esc(b.name)} / ${esc(b.phone)}</td><td>${money(b.total)}</td><td>${esc(b.paymentStatus)}</td><td>${statusSelect(b.paymentStatus,['Unpaid','Pending','Paid','Refunded'],'bookingPayment')}</td></tr>`).join(''));
+$('foodPayments').innerHTML=table(['Reference','Customer','Total','Payment Status','Update'],state.orders.filter(o=>!f||o.paymentStatus===f).map(o=>`<tr><td>${esc(o.refNo)}</td><td>${esc(o.customerName)} / ${esc(o.customerPhone)}</td><td>${money(o.total)}</td><td>${esc(o.paymentStatus)}</td><td>${statusSelect(o.paymentStatus,['Unpaid','Pending','Paid','Refunded'],'foodPayment')}</td></tr>`).join(''));
+}
+async function bookingPayment(el){const id=state.bookings.find(x=>x.refNo===el.closest('tr').cells[0].textContent)?._id;await updatePayment('booking',id,el.value)}
+async function foodPayment(el){const id=state.orders.find(x=>x.refNo===el.closest('tr').cells[0].textContent)?._id;await updatePayment('food',id,el.value)}
+async function updatePayment(type,id,paymentStatus){if(!id)return;try{await api('/api/admin/payment/'+type+'/'+id,{method:'PATCH',body:JSON.stringify({paymentStatus})});notice('Payment status updated.');await loadData()}catch(e){notice(e.message,true);loadData()}}
+
+function renderReports(){
+const s = state.summary || {};
+const start = state.reportStartDate || $('reportDate').value;
+const end = state.reportEndDate || start;
+const period = start === end ? start : `${start} to ${end}`;
+
+$('reportStats').innerHTML = [
+  ['Report Period', period],
+  ['Bookings', s.todayBookings],
+  ['Check-ins', s.todayCheckins],
+  ['Check-outs', s.todayCheckouts],
+  ['Food Orders', s.todayOrders],
+  ['Room Collection', money(s.roomCollection)],
+  ['Food Collection', money(s.foodCollection)],
+  ['Total Collection', money(s.todayCollection)]
+].map(([a,b]) => `<div class="card"><small>${a}</small><strong>${b ?? 0}</strong></div>`).join('');
+
+const bookings = state.reportBookings || [];
+const orders = state.reportOrders || [];
+
+$('reportBookings').innerHTML = table(
+  ['Reference','Customer','Room','Status','Total','Payment'],
+  bookings.map(b => `<tr><td>${esc(b.refNo)}</td><td>${esc(b.name)}</td><td>${esc(b.roomNumber)}</td><td>${esc(b.status)}</td><td>${money(b.total)}</td><td>${esc(b.paymentStatus)}</td></tr>`).join('')
+);
+
+$('reportOrders').innerHTML = table(
+  ['Reference','Customer','Location','Status','Total','Payment'],
+  orders.map(o => `<tr><td>${esc(o.refNo)}</td><td>${esc(o.customerName)}</td><td>${esc(o.table)}</td><td>${esc(o.status)}</td><td>${money(o.total)}</td><td>${esc(o.paymentStatus)}</td></tr>`).join('')
+);
+}
+
+function toggleReportDates(){
+  const range = $('reportMode').value === 'range';
+  $('reportDate').style.display = range ? 'none' : '';
+  $('reportStartDate').style.display = range ? '' : 'none';
+  $('reportEndDate').style.display = range ? '' : 'none';
+}
+async function loadData(){
+try{
+const mode = $('reportMode').value;
+let reportParams = '';
+
+if (mode === 'range') {
+  const start = $('reportStartDate').value;
+  const end = $('reportEndDate').value;
+
+  if (!start || !end || end < start) {
+    notice('Please select a valid start date and end date.', true);
+    return;
+  }
+
+  reportParams = `startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`;
+} else {
+  const day = $('reportDate').value || new Date().toLocaleDateString('en-CA');
+  reportParams = `date=${encodeURIComponent(day)}`;
+}
+
+const d=await api('/api/admin/data?'+reportParams);
+const offerData = await api('/api/admin/offers');
+
+state={...state,...d,offers:offerData.offers || []};
+renderOverview();renderBookings();renderOrders();renderRooms();renderMenu();renderOffers();renderCustomers();renderPayments();renderReports();
+}catch(e){notice('Dashboard load failed: '+e.message,true)}
+}
+const reportToday = new Date().toLocaleDateString('en-CA');
+$('reportDate').value = reportToday;
+$('reportStartDate').value = reportToday;
+$('reportEndDate').value = reportToday;
+toggleReportDates();
+loadData();
+</script>
+</body>
+</html>

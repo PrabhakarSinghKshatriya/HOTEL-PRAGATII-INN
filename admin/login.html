@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Login | Hotel Pragati</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+body{min-height:100vh;background:#1c0f00;display:grid;place-items:center;padding:20px;font-family:Arial,sans-serif}
+.login-box{background:#fff;padding:35px;border-radius:14px;width:100%;max-width:410px;box-shadow:0 15px 50px #0005}
+.login-box h2{text-align:center;color:#79501b;margin-bottom:10px}
+.login-box p{text-align:center;color:#777;margin-bottom:25px}
+.login-box input{width:100%;padding:13px;margin:9px 0;border:1px solid #ddd;border-radius:7px}
+.login-box button{width:100%;padding:14px;background:#b88632;color:white;border:0;border-radius:7px;font-weight:bold;cursor:pointer;margin-top:12px}
+#error{color:#c62828;text-align:center;margin-top:12px;font-size:14px}
+.back{text-align:center;display:block;margin-top:20px;color:#9b712c}
+</style>
+</head>
+<body>
+<div class="login-box">
+<h2>Hotel Pragati Inn</h2>
+<p>Administrator Login</p>
+<form id="loginForm">
+<input id="email" type="email" placeholder="Admin Email" required autocomplete="username">
+<input id="password" type="password" placeholder="Password" required autocomplete="current-password">
+<button type="submit" id="loginButton">Login to Dashboard</button>
+<div id="error"></div>
+</form>
+<a href="../index.html" class="back">← Back to Website</a>
+</div>
+
+<script>
+if(localStorage.getItem('hotel_admin_token')){
+  location.replace('dashboard.html');
+}
+
+document.getElementById('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+
+  const button=document.getElementById('loginButton');
+  const error=document.getElementById('error');
+
+  button.disabled=true;
+  button.textContent='Logging in...';
+  error.textContent='';
+
+  try{
+    const response=await fetch('/api/auth/admin/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        email:document.getElementById('email').value.trim(),
+        password:document.getElementById('password').value
+      })
+    });
+
+    const data=await response.json();
+
+    if(!response.ok || !data.success){
+      throw new Error(data.message || 'Login failed');
+    }
+
+    if(data.admin?.role!=='admin' || !data.token){
+      throw new Error('Invalid administrator account');
+    }
+
+    localStorage.setItem('hotel_admin_token',data.token);
+    localStorage.setItem('hotel_admin_name',data.admin.name);
+
+    location.replace('dashboard.html');
+
+  }catch(err){
+    error.textContent=err.message;
+  }finally{
+    button.disabled=false;
+    button.textContent='Login to Dashboard';
+  }
+});
+</script>
+</body>
+</html>

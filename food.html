@@ -26,6 +26,7 @@
     <a href="rooms.html">Rooms</a>
     <a href="food.html" class="active">Food Order</a>
     <a href="contact.html">Contact</a>
+    <a href="admin/login.html" class="admin-nav-link">🔐 Admin Login</a>
     <a href="food.html" class="nav-cart-btn">
       🛒 Cart <span class="cart-badge" style="display:none">0</span>
     </a>
@@ -583,24 +584,84 @@
         <p class="order-sub">Add items from the menu on the left</p>
       </div>
 
-      <!-- Table Selection -->
+      <!-- Customer Details -->
       <div class="table-select">
-        <label>Table / Room No.</label>
-        <select id="tableNo">
-          <option value="T1">Table 1</option>
-          <option value="T2">Table 2</option>
-          <option value="T3">Table 3</option>
-          <option value="T4">Table 4</option>
-          <option value="T5">Table 5</option>
-          <option value="T6">Table 6</option>
-          <option value="R101">Room 101</option>
-          <option value="R102">Room 102</option>
-          <option value="R103">Room 103</option>
-          <option value="R201">Room 201</option>
-          <option value="R202">Room 202</option>
-          <option value="R203">Room 203</option>
+        <label for="customerName">Customer Name *</label>
+        <input type="text" id="customerName" placeholder="Enter your name"
+          required maxlength="100"
+          style="width:100%;margin-top:8px;padding:12px;border-radius:8px;">
+      </div>
+
+      <div class="table-select">
+        <label for="customerPhone">Mobile Number *</label>
+        <input type="tel" id="customerPhone" placeholder="10-digit mobile number"
+          required inputmode="numeric" maxlength="10" pattern="[0-9]{10}"
+          style="width:100%;margin-top:8px;padding:12px;border-radius:8px;">
+      </div>
+
+      <!-- Table / Room Selection -->
+      <div class="table-select">
+        <label for="tableNo">Order Location *</label>
+        <select id="tableNo" required
+          style="width:100%;margin-top:8px;padding:12px;border-radius:8px;">
+          <option value="">Select Table or Room</option>
+
+          <optgroup label="Restaurant Tables">
+            <option value="Table 1">Table 1</option>
+            <option value="Table 2">Table 2</option>
+            <option value="Table 3">Table 3</option>
+            <option value="Table 4">Table 4</option>
+            <option value="Table 5">Table 5</option>
+            <option value="Table 6">Table 6</option>
+          </optgroup>
+
+          <optgroup label="Hotel Rooms">
+            <option value="Room 101">Room 101</option>
+            <option value="Room 102">Room 102</option>
+            <option value="Room 103">Room 103</option>
+            <option value="Room 104">Room 104</option>
+            <option value="Room 105">Room 105</option>
+            <option value="Room 106">Room 106</option>
+            <option value="Room 107">Room 107</option>
+            <option value="Room 108">Room 108</option>
+            <option value="Room 109">Room 109</option>
+            <option value="Room 110">Room 110</option>
+            <option value="Room 111">Room 111</option>
+            <option value="Room 112">Room 112</option>
+            <option value="Room 113">Room 113</option>
+            <option value="Room 114">Room 114</option>
+            <option value="Room 115">Room 115</option>
+            <option value="Room 116">Room 116</option>
+            <option value="Room 117">Room 117</option>
+          </optgroup>
+
           <option value="Takeaway">Takeaway</option>
         </select>
+      </div>
+
+      <!-- Payment Details -->
+      <div class="table-select">
+        <label for="foodPaymentMethod">Payment Method *</label>
+        <select id="foodPaymentMethod" required
+          onchange="document.getElementById('foodUpiDetails').style.display=this.value==='Online'?'block':'none'"
+          style="width:100%;margin-top:8px;padding:12px;border-radius:8px;">
+          <option value="Cash">Cash</option>
+          <option value="Online">Online Payment (UPI / QR)</option>
+        </select>
+      </div>
+      <div id="foodUpiDetails" style="display:none;padding:12px;border:1px solid #ddd;border-radius:10px;margin:10px 0">
+        <strong>Hotel Pragati UPI ID</strong>
+        <p style="font-weight:700;word-break:break-all">paytm.s132lso@pty</p>
+        <p id="foodUpiAmount" style="text-align:center;font-weight:700;color:#16803c">Payable Amount: ₹0</p>
+        <img id="foodUpiQr" src="" alt="Dynamic UPI Payment QR"
+             style="display:block;width:220px;max-width:100%;height:auto;margin:12px auto;border:1px solid #ddd;border-radius:10px;padding:8px;background:#fff;">
+        <p style="text-align:center;font-size:12px;color:#666">Scan this QR to pay the exact food order amount.</p>
+        <a id="foodUpiPayLink" href="upi://pay?pa=paytm.s132lso@pty&pn=Hotel%20Pragati">Open UPI App to Pay</a>
+        <label for="foodTransactionId" style="display:block;margin-top:12px">UPI Transaction / UTR ID *</label>
+        <input type="text" id="foodTransactionId" maxlength="100"
+          placeholder="Enter UPI transaction ID"
+          style="width:100%;margin-top:8px;padding:12px;border-radius:8px;">
+        <small>Payment will remain Pending until verified by hotel admin.</small>
       </div>
 
       <!-- Cart Items -->
