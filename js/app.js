@@ -257,7 +257,7 @@ function initBookingForm() {
 
   async function refreshRoomOffer() {
     try {
-      const response = await fetch('/api/offers/current', { cache: 'no-store' });
+      const response = await fetch(window.API_BASE_URL + '/api/offers/current', { cache: 'no-store' });
       if (!response.ok) throw new Error('Offers unavailable');
 
       const data = await response.json();
@@ -333,7 +333,7 @@ function initBookingForm() {
 
     try {
       const params = new URLSearchParams({ roomType, checkin, checkout });
-      const response = await fetch(`/api/bookings/rooms?${params}`, {
+      const response = await fetch(`${window.API_BASE_URL}/api/bookings/rooms?${params}`, {
         signal: roomRequestController.signal
       });
       const data = await response.json();
@@ -435,7 +435,7 @@ function initBookingForm() {
     }
 
     try {
-      const response = await fetch('/api/bookings', {
+      const response = await fetch(window.API_BASE_URL + '/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -919,7 +919,7 @@ function initFoodOrder() {
       placeOrderBtn.textContent = 'Placing Order...';
 
       try {
-        const response = await fetch('/api/food/orders', {
+        const response = await fetch(window.API_BASE_URL + '/api/food/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -970,7 +970,7 @@ function initFoodOrder() {
   // Load current active food offer.
   async function refreshFoodOffer() {
     try {
-      const response = await fetch('/api/offers/current', { cache: 'no-store' });
+      const response = await fetch(window.API_BASE_URL + '/api/offers/current', { cache: 'no-store' });
       if (!response.ok) throw new Error('Offers unavailable');
 
       const data = await response.json();
@@ -989,7 +989,7 @@ function initFoodOrder() {
   });
 
   // Load current menu and reconcile old localStorage cart entries.
-  fetch('/api/food/menu')
+  fetch(window.API_BASE_URL + '/api/food/menu')
     .then(response => {
       if (!response.ok) throw new Error('Menu request failed');
       return response.json();

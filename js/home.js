@@ -26,7 +26,7 @@
 
     try {
       const response = await fetch(
-        `/api/bookings/availability-summary?${params}`,
+        `${window.API_BASE_URL}/api/bookings/availability-summary?${params}`,
         { cache: 'no-store' }
       );
 
