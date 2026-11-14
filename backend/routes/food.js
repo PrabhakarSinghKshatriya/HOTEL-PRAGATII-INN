@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const crypto = require('crypto');
 const FoodItem = require('../models/FoodItem');
 const FoodOrder = require('../models/FoodOrder');
@@ -188,23 +189,34 @@ router.post('/orders', async (req, res) => {
       paymentVerifiedAt: null
     });
 
-    await createAdminNotification({
-      type: 'food',
-      refNo: order.refNo,
-      recordId: order._id,
-      customerName: order.customerName,
-      phone: order.customerPhone,
-      title: 'New Food Order',
-      message: `${order.customerName} placed a food order for ${order.table}.`
-    });
+    // Notifications must not turn a successfully saved order into an API failure.
+    const notificationResults = await Promise.allSettled([
+      createAdminNotification({
+        type: 'food',
+        refNo: order.refNo,
+        recordId: order._id,
+        customerName: order.customerName,
+        phone: order.customerPhone,
+        title: 'New Food Order',
+        message: `${order.customerName} placed a food order for ${order.table}.`
+      }),
+      createNotification({
+        refNo: order.refNo,
+        phone: order.customerPhone,
+        type: 'food',
+        title: 'Order Received',
+        message: `Your food order for ${order.table} has been received by the kitchen.`,
+        status: order.status
+      })
+    ]);
 
-    await createNotification({
-      refNo: order.refNo,
-      phone: order.customerPhone,
-      type: 'food',
-      title: 'Order Received',
-      message: `Your food order for ${order.table} has been received by the kitchen.`,
-      status: order.status
+    notificationResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(
+          index === 0 ? 'Admin notification failed:' : 'Customer notification failed:',
+          result.reason
+        );
+      }
     });
 
     res.status(201).json({
@@ -366,41 +378,57 @@ router.get('/orders/admin/all', adminAuth, async (req, res) => {
 });
 
 // ADMIN: update food order status.
+
 router.patch('/orders/admin/:id/status', adminAuth, async (req, res) => {
   try {
     const allowed = [
-      'Received',
-      'Preparing',
-      'Ready',
-      'Served',
-      'Cancelled'
+      'Received', 'Preparing', 'Ready', 'Served', 'Cancelled'
     ];
 
     if (!allowed.includes(req.body.status)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid order status'
+        message: 'Invalid order status.'
       });
     }
 
-    const order = await FoodOrder.findById(req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order ID.'
+      });
+    }
 
-    if (!order) {
+    const existing = await FoodOrder.findById(req.params.id);
+
+    if (!existing) {
       return res.status(404).json({
         success: false,
-        message: 'Order not found'
+        message: 'Order not found.'
       });
     }
 
-    const previousStatus = order.status;
+    const previousStatus = existing.status;
 
-    // Stock changes and order status are committed in one MongoDB transaction.
-    await updateOrderStock(order._id, req.body.status);
-    await order.constructor.findById(order._id).then(updated => {
-      if (updated) order.status = updated.status;
-    });
+    // UPI orders must be manually verified before kitchen preparation.
+    // Cash orders retain their existing workflow.
+    if (
+      req.body.status === 'Preparing' &&
+      existing.paymentMethod === 'UPI' &&
+      existing.paymentStatus !== 'Paid'
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: 'Please verify UPI payment before starting food preparation.'
+      });
+    }
 
-    if (previousStatus !== order.status) {
+    const updatedOrder = await updateOrderStock(
+      existing._id,
+      req.body.status
+    );
+
+    if (previousStatus !== updatedOrder.status) {
       const messages = {
         Received: 'Your food order has been received.',
         Preparing: 'The kitchen has started preparing your food.',
@@ -409,22 +437,37 @@ router.patch('/orders/admin/:id/status', adminAuth, async (req, res) => {
         Cancelled: 'Your food order has been cancelled. Please contact the hotel if needed.'
       };
 
-      await createNotification({
-        refNo: order.refNo,
-        phone: order.customerPhone,
-        type: 'food',
-        title: `Food Order ${order.status}`,
-        message: messages[order.status] || `Your food order status is now ${order.status}.`,
-        status: order.status
-      });
+      try {
+        await createNotification({
+          refNo: updatedOrder.refNo,
+          phone: updatedOrder.customerPhone,
+          type: 'food',
+          title: `Food Order ${updatedOrder.status}`,
+          message: messages[updatedOrder.status],
+          status: updatedOrder.status
+        });
+      } catch (notificationError) {
+        console.error('Food order notification failed:', notificationError);
+      }
     }
 
-    res.json({ success: true, order });
+    return res.json({
+      success: true,
+      order: updatedOrder
+    });
 
   } catch (error) {
-    res.status(500).json({
+    console.error('Food order status update:', error);
+
+    const clientError =
+      /Invalid status transition|Insufficient stock|ingredient|Food order not found|Invalid stock/i
+        .test(error.message);
+
+    return res.status(clientError ? 400 : 500).json({
       success: false,
-      message: 'Unable to update order'
+      message: clientError
+        ? error.message
+        : 'Unable to update order status.'
     });
   }
 });

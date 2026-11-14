@@ -4,20 +4,40 @@ const Recipe = require('../models/Recipe');
 const InventoryItem = require('../models/InventoryItem');
 const StockMovement = require('../models/StockMovement');
 
+const ALLOWED_TRANSITIONS = {
+  Received: ['Preparing', 'Cancelled'],
+  Preparing: ['Ready', 'Cancelled'],
+  Ready: ['Served', 'Cancelled'],
+  Served: [],
+  Cancelled: []
+};
+
 async function updateOrderStock(orderId, newStatus) {
   const session = await mongoose.startSession();
 
   try {
+    let updatedOrder;
+
     await session.withTransaction(async () => {
       const order = await FoodOrder.findById(orderId).session(session);
 
-      if (!order) throw new Error('Food order not found');
+      if (!order) throw new Error('Food order not found.');
 
       const oldStatus = order.status;
 
-      if (oldStatus === newStatus) return;
+      if (oldStatus === newStatus) {
+        updatedOrder = order;
+        return;
+      }
 
-      if (newStatus === 'Preparing' && !order.stockDeducted) {
+      if (!ALLOWED_TRANSITIONS[oldStatus]?.includes(newStatus)) {
+        throw new Error(
+          `Invalid status transition: ${oldStatus} → ${newStatus}.`
+        );
+      }
+
+      // Deduct stock exactly once when preparation starts.
+      if (newStatus === 'Preparing') {
         const required = new Map();
 
         for (const item of order.items) {
@@ -26,86 +46,158 @@ async function updateOrderStock(orderId, newStatus) {
             variant: item.variant || 'single'
           }).session(session);
 
-          // Recipes are optional until configured for a menu item.
+          // Recipes are optional until configured.
           if (!recipe) continue;
 
           for (const ingredient of recipe.ingredients) {
             const id = String(ingredient.inventoryItem);
-            const amount = Number(ingredient.quantity) * Number(item.qty);
+            const quantity =
+              Number(ingredient.quantity) * Number(item.qty);
 
-            required.set(id, (required.get(id) || 0) + amount);
+            if (!Number.isFinite(quantity) || quantity <= 0) {
+              throw new Error('Invalid recipe ingredient quantity.');
+            }
+
+            required.set(
+              id,
+              (required.get(id) || 0) + quantity
+            );
           }
         }
 
+        const snapshot = [];
+
         for (const [id, quantity] of required) {
-          const stock = await InventoryItem.findById(id).session(session);
+          // Atomic conditional decrement prevents negative stock.
+          const stock = await InventoryItem.findOneAndUpdate(
+            {
+              _id: id,
+              isActive: true,
+              currentStock: { $gte: quantity }
+            },
+            { $inc: { currentStock: -quantity } },
+            { new: false, session }
+          );
 
-          if (!stock || !stock.isActive) {
-            throw new Error('A recipe ingredient is missing or inactive.');
-          }
+          if (!stock) {
+            const current = await InventoryItem.findById(id)
+              .session(session);
 
-          if (stock.currentStock < quantity) {
+            if (!current || !current.isActive) {
+              throw new Error(
+                'A recipe ingredient is missing or inactive.'
+              );
+            }
+
             throw new Error(
-              `Insufficient stock for ${stock.name}. Available: ${stock.currentStock} ${stock.unit}, Required: ${quantity} ${stock.unit}.`
+              `Insufficient stock for ${current.name}. ` +
+              `Available: ${current.currentStock} ${current.unit}, ` +
+              `Required: ${quantity} ${current.unit}.`
             );
           }
 
           const previousStock = stock.currentStock;
-          stock.currentStock -= quantity;
-          await stock.save({ session });
+          const newStock = previousStock - quantity;
 
           await StockMovement.create([{
             inventoryItem: stock._id,
             type: 'Consumption',
             quantity: -quantity,
             previousStock,
-            newStock: stock.currentStock,
+            newStock,
             reference: order.refNo,
             note: `Food order ${order.refNo}`
           }], { session });
+
+          snapshot.push({
+            inventoryItem: stock._id,
+            itemName: stock.name,
+            unit: stock.unit,
+            quantity
+          });
         }
 
-        order.stockDeducted = true;
-        order.stockDeductedAt = new Date();
+        order.stockDeductionSnapshot = snapshot;
+        order.stockDeducted = snapshot.length > 0;
+        order.stockDeductedAt =
+          snapshot.length > 0 ? new Date() : null;
       }
 
+      // Restore the exact original deduction on cancellation.
       if (newStatus === 'Cancelled' && order.stockDeducted) {
-        const recipes = await Recipe.find({
-          itemId: { $in: order.items.map(i => i.itemId) }
-        }).session(session);
+        let restoration = [];
 
-        const required = new Map();
+        const snapshot = order.stockDeductionSnapshot || [];
 
-        for (const item of order.items) {
-          const recipe = recipes.find(r =>
-            r.itemId === item.itemId &&
-            r.variant === (item.variant || 'single')
-          );
+        if (snapshot.length > 0) {
+          restoration = snapshot.map(entry => ({
+            inventoryItem: entry.inventoryItem,
+            quantity: Number(entry.quantity)
+          }));
+        } else {
+          // Backward compatibility for older orders.
+          const movements = await StockMovement.find({
+            reference: order.refNo,
+            type: 'Consumption'
+          }).session(session);
 
-          if (!recipe) continue;
+          const grouped = new Map();
 
-          for (const ingredient of recipe.ingredients) {
-            const id = String(ingredient.inventoryItem);
-            const amount = Number(ingredient.quantity) * Number(item.qty);
+          for (const movement of movements) {
+            const id = String(movement.inventoryItem);
+            const quantity = Math.abs(Number(movement.quantity));
 
-            required.set(id, (required.get(id) || 0) + amount);
+            if (!Number.isFinite(quantity) || quantity <= 0) {
+              continue;
+            }
+
+            grouped.set(
+              id,
+              (grouped.get(id) || 0) + quantity
+            );
           }
+
+          restoration = Array.from(
+            grouped,
+            ([inventoryItem, quantity]) => ({
+              inventoryItem,
+              quantity
+            })
+          );
         }
 
-        for (const [id, quantity] of required) {
-          const stock = await InventoryItem.findById(id).session(session);
-          if (!stock) continue;
+        for (const entry of restoration) {
+          const quantity = Number(entry.quantity);
+
+          if (!Number.isFinite(quantity) || quantity <= 0) {
+            throw new Error('Invalid stock restoration quantity.');
+          }
+
+          const stock = await InventoryItem.findById(
+            entry.inventoryItem
+          ).session(session);
+
+          if (!stock) {
+            throw new Error(
+              'An inventory item required for restoration no longer exists.'
+            );
+          }
 
           const previousStock = stock.currentStock;
-          stock.currentStock += quantity;
-          await stock.save({ session });
+          const newStock = previousStock + quantity;
+
+          await InventoryItem.updateOne(
+            { _id: stock._id },
+            { $inc: { currentStock: quantity } },
+            { session }
+          );
 
           await StockMovement.create([{
             inventoryItem: stock._id,
             type: 'Restoration',
             quantity,
             previousStock,
-            newStock: stock.currentStock,
+            newStock,
             reference: order.refNo,
             note: `Cancelled food order ${order.refNo}`
           }], { session });
@@ -113,15 +205,22 @@ async function updateOrderStock(orderId, newStatus) {
 
         order.stockDeducted = false;
         order.stockDeductedAt = null;
+        order.stockDeductionSnapshot = [];
       }
 
       order.status = newStatus;
       await order.save({ session });
+
+      updatedOrder = order;
     });
 
+    return updatedOrder;
   } finally {
     await session.endSession();
   }
 }
 
-module.exports = { updateOrderStock };
+module.exports = {
+  updateOrderStock,
+  ALLOWED_TRANSITIONS
+};

@@ -19,17 +19,10 @@ app.use(helmet({
 
 app.use(cors());
 
-app.use(express.json({ limit: '5mb' }))// API Routes
-app.use('/api/auth', require('./backend/routes/auth'));
-app.use('/api/bookings', require('./backend/routes/bookings'));
-app.use('/api/food', require('./backend/routes/food'));
-app.use('/api/offers', require('./backend/routes/offers'));
-app.use('/api/notifications', require('./backend/routes/notifications'));
-app.use('/api/admin', require('./backend/routes/admin'));
-app.use('/api/inventory', require('./backend/routes/inventory'));
-
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Apply rate limiting BEFORE registering API routes.
 app.use('/api/', rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
@@ -38,6 +31,17 @@ app.use('/api/', rateLimit({
     message: 'Too many requests. Please try again later.'
   }
 }));
+
+// API Routes
+app.use('/api/auth', require('./backend/routes/auth'));
+app.use('/api/bookings', require('./backend/routes/bookings'));
+app.use('/api/food', require('./backend/routes/food'));
+app.use('/api/offers', require('./backend/routes/offers'));
+app.use('/api/notifications', require('./backend/routes/notifications'));
+app.use('/api/admin', require('./backend/routes/admin'));
+app.use('/api/inventory', require('./backend/routes/inventory'));
+
+
 
 app.get('/api/health', (req, res) => {
   res.json({

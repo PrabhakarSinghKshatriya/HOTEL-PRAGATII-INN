@@ -72,36 +72,71 @@ router.get('/dashboard', async (req, res) => {
 
 // Inventory item CRUD
 router.post('/items', async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
-    const { name, sku, category, unit, currentStock, reorderLevel, costPerUnit, supplier } = req.body;
+    const {
+      name, sku, category, unit, currentStock,
+      reorderLevel, costPerUnit, supplier
+    } = req.body;
 
     if (!String(name || '').trim() || !String(unit || '').trim()) {
-      return res.status(400).json({ success: false, message: 'Item name and unit are required.' });
-    }
-
-    const stock = Number(currentStock || 0);
-    const item = await InventoryItem.create({
-      name, sku, category, unit,
-      currentStock: stock,
-      reorderLevel: Number(reorderLevel || 0),
-      costPerUnit: Number(costPerUnit || 0),
-      supplier
-    });
-
-    if (stock > 0) {
-      await StockMovement.create({
-        inventoryItem: item._id,
-        type: 'Opening',
-        quantity: stock,
-        previousStock: 0,
-        newStock: stock,
-        note: 'Opening stock'
+      return res.status(400).json({
+        success: false,
+        message: 'Item name and unit are required.'
       });
     }
 
+    const stock = Number(currentStock ?? 0);
+    const reorder = Number(reorderLevel ?? 0);
+    const cost = Number(costPerUnit ?? 0);
+
+    if (
+      !Number.isFinite(stock) || stock < 0 ||
+      !Number.isFinite(reorder) || reorder < 0 ||
+      !Number.isFinite(cost) || cost < 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid stock, reorder level or cost.'
+      });
+    }
+
+    let item;
+
+    await session.withTransaction(async () => {
+      [item] = await InventoryItem.create([{
+        name, sku, category, unit,
+        currentStock: stock,
+        reorderLevel: reorder,
+        costPerUnit: cost,
+        supplier
+      }], { session });
+
+      if (stock > 0) {
+        await StockMovement.create([{
+          inventoryItem: item._id,
+          type: 'Opening',
+          quantity: stock,
+          previousStock: 0,
+          newStock: stock,
+          note: 'Opening stock'
+        }], { session });
+      }
+    });
+
     res.status(201).json({ success: true, item });
+
   } catch (error) {
-    res.status(400).json({ success: false, message: error.code === 11000 ? 'SKU already exists.' : error.message });
+    console.error('Create inventory item:', error);
+    res.status(400).json({
+      success: false,
+      message: error.code === 11000
+        ? 'SKU already exists.'
+        : error.message
+    });
+  } finally {
+    await session.endSession();
   }
 });
 
@@ -141,41 +176,68 @@ router.delete('/items/:id', async (req, res) => {
 // Manual stock adjustment
 router.post('/adjustments', async (req, res) => {
   const session = await mongoose.startSession();
+
   try {
     const { itemId, quantity, note } = req.body;
     const change = Number(quantity);
 
     if (!validId(itemId) || !Number.isFinite(change) || change === 0) {
-      return res.status(400).json({ success: false, message: 'Select an item and enter a non-zero adjustment.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Select an item and enter a non-zero adjustment.'
+      });
     }
 
     let result;
+
     await session.withTransaction(async () => {
-      const item = await InventoryItem.findById(itemId).session(session);
-      if (!item) throw new Error('Inventory item not found.');
+      const filter = {
+        _id: itemId,
+        isActive: true
+      };
 
-      const previousStock = item.currentStock;
-      const nextStock = previousStock + change;
-      if (nextStock < 0) throw new Error('Adjustment cannot make stock negative.');
+      if (change < 0) {
+        filter.currentStock = { $gte: Math.abs(change) };
+      }
 
-      item.currentStock = nextStock;
-      await item.save({ session });
+      const item = await InventoryItem.findOneAndUpdate(
+        filter,
+        { $inc: { currentStock: change } },
+        { new: true, session, runValidators: true }
+      );
+
+      if (!item) {
+        const existing = await InventoryItem.findById(itemId)
+          .session(session);
+
+        if (!existing || !existing.isActive) {
+          throw new Error('Inventory item not found or inactive.');
+        }
+
+        throw new Error('Adjustment cannot make stock negative.');
+      }
+
+      const previousStock = item.currentStock - change;
 
       const [movement] = await StockMovement.create([{
         inventoryItem: item._id,
         type: 'Adjustment',
         quantity: change,
         previousStock,
-        newStock: nextStock,
-        note: note || 'Manual stock adjustment'
+        newStock: item.currentStock,
+        note: String(note || 'Manual stock adjustment').slice(0, 500)
       }], { session });
 
       result = { item, movement };
     });
 
     res.json({ success: true, ...result });
+
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
   } finally {
     await session.endSession();
   }
@@ -184,23 +246,67 @@ router.post('/adjustments', async (req, res) => {
 // Recipe management
 router.post('/recipes', async (req, res) => {
   try {
-    const { itemId, menuItemName, variant = 'single', ingredients } = req.body;
+    const {
+      itemId,
+      menuItemName,
+      variant = 'single',
+      ingredients
+    } = req.body;
 
-    if (!itemId || !['single', 'half', 'full'].includes(variant) ||
-        !Array.isArray(ingredients) || !ingredients.length ||
-        ingredients.some(i => !validId(i.inventoryItem) || !Number.isFinite(Number(i.quantity)) || Number(i.quantity) <= 0)) {
-      return res.status(400).json({ success: false, message: 'Provide a menu item, variant and valid ingredients.' });
+    if (
+      !String(itemId || '').trim() ||
+      !['single', 'half', 'full'].includes(variant) ||
+      !Array.isArray(ingredients) ||
+      !ingredients.length ||
+      ingredients.some(i =>
+        !i ||
+        !validId(i.inventoryItem) ||
+        !Number.isFinite(Number(i.quantity)) ||
+        Number(i.quantity) <= 0
+      )
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Provide a menu item, variant and valid ingredients.'
+      });
+    }
+
+    const ingredientIds = [
+      ...new Set(ingredients.map(i => String(i.inventoryItem)))
+    ];
+
+    const activeItems = await InventoryItem.find({
+      _id: { $in: ingredientIds },
+      isActive: true
+    }).select('_id').lean();
+
+    if (activeItems.length !== ingredientIds.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'One or more ingredients are missing or inactive.'
+      });
     }
 
     const recipe = await Recipe.findOneAndUpdate(
-      { itemId: String(itemId), variant },
-      { $set: { menuItemName: menuItemName || '', ingredients } },
+      { itemId: String(itemId).trim(), variant },
+      {
+        $set: {
+          menuItemName: String(menuItemName || '').trim(),
+          ingredients
+        }
+      },
       { new: true, upsert: true, runValidators: true }
     );
 
     res.json({ success: true, recipe });
+
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.code === 11000
+        ? 'Recipe already exists. Please retry.'
+        : error.message
+    });
   }
 });
 
@@ -278,6 +384,201 @@ router.post('/purchases', async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   } finally {
     await session.endSession();
+  }
+});
+
+
+// Safely reverse a purchase's stock quantities inside the current transaction.
+async function reversePurchaseStock(purchase, session) {
+  const totals = new Map();
+
+  for (const row of (purchase.items || [])) {
+    const id = String(row.inventoryItem);
+    totals.set(id, (totals.get(id) || 0) + Number(row.quantity || 0));
+  }
+
+  for (const [id, quantity] of totals) {
+    const item = await InventoryItem.findOneAndUpdate(
+      { _id: id, currentStock: { $gte: quantity } },
+      { $inc: { currentStock: -quantity } },
+      { new: true, session }
+    );
+
+    if (!item) {
+      throw new Error(
+        `Cannot reverse purchase: insufficient current stock for ${id}. Some stock may already have been consumed.`
+      );
+    }
+
+    await StockMovement.create([{
+      inventoryItem: id,
+      type: 'Adjustment',
+      quantity: -quantity,
+      previousStock: item.currentStock + quantity,
+      newStock: item.currentStock,
+      reference: `PURCHASE:${purchase._id}`,
+      note: `Purchase reversal: ${purchase.supplier}`
+    }], { session });
+  }
+}
+
+function validatePurchasePayload(body) {
+  if (!String(body.supplier || '').trim()) {
+    throw new Error('Supplier is required.');
+  }
+  if (!Array.isArray(body.items) || !body.items.length) {
+    throw new Error('Add at least one purchase item.');
+  }
+
+  const totals = new Map();
+  for (const row of body.items) {
+    const id = String(row.inventoryItem || '');
+    const quantity = Number(row.quantity);
+    const unitCost = Number(row.unitCost);
+
+    if (!id || !Number.isFinite(quantity) || quantity <= 0 ||
+        !Number.isFinite(unitCost) || unitCost < 0) {
+      throw new Error('Invalid purchase item, quantity, or unit cost.');
+    }
+
+    const old = totals.get(id) || { quantity: 0, total: 0 };
+    old.quantity += quantity;
+    old.total += quantity * unitCost;
+    totals.set(id, old);
+  }
+
+  return body.items.map(row => ({
+    inventoryItem: row.inventoryItem,
+    name: String(row.name || '').trim(),
+    quantity: Number(row.quantity),
+    unitCost: Number(row.unitCost),
+    total: Number(row.quantity) * Number(row.unitCost)
+  }));
+}
+
+// Edit purchase and reconcile stock atomically.
+router.patch('/purchases/:id', async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    let result;
+
+    await session.withTransaction(async () => {
+      if (!validId(req.params.id)) throw new Error('Invalid purchase ID.');
+
+      const purchase = await Purchase.findById(req.params.id).session(session);
+      if (!purchase) throw new Error('Purchase not found.');
+
+      const items = validatePurchasePayload(req.body);
+      await reversePurchaseStock(purchase, session);
+
+      for (const row of items) {
+        const item = await InventoryItem.findOneAndUpdate(
+          { _id: row.inventoryItem, isActive: true },
+          { $inc: { currentStock: row.quantity }, $set: { costPerUnit: row.unitCost } },
+          { new: true, session }
+        );
+
+        if (!item) throw new Error('An inventory item was not found or is inactive.');
+
+        await StockMovement.create([{
+          inventoryItem: item._id,
+          type: 'Purchase',
+          quantity: row.quantity,
+          previousStock: item.currentStock - row.quantity,
+          newStock: item.currentStock,
+          reference: `PURCHASE:${purchase._id}`,
+          note: `Updated purchase from ${String(req.body.supplier).trim()}`
+        }], { session });
+
+        row.name = item.name;
+      }
+
+      purchase.supplier = String(req.body.supplier).trim();
+      purchase.invoiceNo = String(req.body.invoiceNo || '');
+      purchase.purchaseDate = req.body.purchaseDate || purchase.purchaseDate;
+      purchase.notes = String(req.body.notes || '');
+      purchase.items = items;
+      purchase.total = items.reduce((sum, row) => sum + row.total, 0);
+
+      await purchase.save({ session });
+      result = purchase;
+    });
+
+    res.json({ success: true, purchase: result, message: 'Purchase updated and stock reconciled.' });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  } finally {
+    await session.endSession();
+  }
+});
+
+// Delete purchase only when its quantity can safely be reversed.
+router.delete('/purchases/:id', async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      if (!validId(req.params.id)) throw new Error('Invalid purchase ID.');
+
+      const purchase = await Purchase.findById(req.params.id).session(session);
+      if (!purchase) throw new Error('Purchase not found.');
+
+      await reversePurchaseStock(purchase, session);
+      await Purchase.deleteOne({ _id: purchase._id }, { session });
+    });
+
+    res.json({ success: true, message: 'Purchase deleted and stock reversed.' });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  } finally {
+    await session.endSession();
+  }
+});
+
+
+// Update existing expense
+router.patch('/expenses/:id', async (req, res) => {
+  try {
+    if (!validId(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid expense ID.' });
+    }
+
+    const { category, description, amount, date, paymentMethod, notes } = req.body;
+
+    if (
+      !String(category || '').trim() ||
+      !String(description || '').trim() ||
+      !Number.isFinite(Number(amount)) ||
+      Number(amount) <= 0 ||
+      !['Cash', 'UPI', 'Bank', 'Other'].includes(paymentMethod)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid expense details.'
+      });
+    }
+
+    const expense = await Expense.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: {
+          category: category.trim(),
+          description: description.trim(),
+          amount: Number(amount),
+          date: date || new Date(),
+          paymentMethod,
+          notes: String(notes || '')
+        }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!expense) {
+      return res.status(404).json({ success: false, message: 'Expense not found.' });
+    }
+
+    res.json({ success: true, expense });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
   }
 });
 

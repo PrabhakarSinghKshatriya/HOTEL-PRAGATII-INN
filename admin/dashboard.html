@@ -269,6 +269,7 @@ textarea{min-height:70px}
 <h2>🛒 Stock Purchase Management</h2>
 <div class="panel">
 <form id="purchaseForm">
+<input type="hidden" id="purchaseId">
 <div class="formgrid">
 <label>Supplier Name<input id="purchaseSupplier" required></label>
 <label>Invoice Number<input id="purchaseInvoice"></label>
@@ -293,6 +294,7 @@ textarea{min-height:70px}
 <h2>💰 Expense Management</h2>
 <div class="panel">
 <form id="expenseForm">
+<input type="hidden" id="expenseId">
 <div class="formgrid">
 <label>Category<input id="expenseCategory" required placeholder="Electricity, Salary, Maintenance"></label>
 <label>Description<input id="expenseDescription" required></label>
@@ -305,7 +307,8 @@ textarea{min-height:70px}
 </label>
 <label>Notes<input id="expenseNotes"></label>
 </div><br>
-<button class="primary">Save Expense</button>
+<button class="primary" id="expenseSaveButton">Save Expense</button>
+<button type="button" class="muted" onclick="resetExpenseForm()">Clear</button>
 </form>
 </div>
 <div class="panel">
@@ -1119,29 +1122,87 @@ function addPurchaseItem() {
 
 function renderPurchases() {
   $('purchaseTable').innerHTML=table(
-    ['Supplier','Invoice','Items','Total','Purchase Date'],
+    ['Supplier','Invoice','Items','Total','Purchase Date','Actions'],
     (inventoryData.purchases||[]).map(p=>`<tr>
       <td>${esc(p.supplier)}</td>
       <td>${esc(p.invoiceNo)}</td>
       <td>${(p.items||[]).map(i=>`${esc(i.name)} × ${i.quantity}`).join('<br>')}</td>
       <td>${money(p.total)}</td>
       <td>${date(p.purchaseDate)}</td>
+      <td>
+        <button class="primary" onclick="editPurchase('${p._id}')">Edit</button>
+        <button class="danger" onclick="deletePurchase('${p._id}')">Delete</button>
+      </td>
     </tr>`).join('')
   );
+}
+
+function resetPurchaseForm() {
+  $('purchaseForm').reset();
+  $('purchaseId').value = '';
+  $('purchaseItems').innerHTML = '';
+  addPurchaseItem();
+  const button = $('purchaseForm').querySelector('[type="submit"]');
+  if (button) button.textContent = 'Save Purchase & Update Stock';
+}
+
+function editPurchase(id) {
+  const p = (inventoryData.purchases || []).find(x => x._id === id);
+  if (!p) return notice('Purchase not found.', true);
+
+  $('purchaseId').value = p._id;
+  $('purchaseSupplier').value = p.supplier || '';
+  $('purchaseInvoice').value = p.invoiceNo || '';
+  $('purchaseDate').value = p.purchaseDate
+    ? String(p.purchaseDate).slice(0,10)
+    : '';
+  $('purchaseNotes').value = p.notes || '';
+
+  $('purchaseItems').innerHTML = '';
+  (p.items || []).forEach(item => {
+    addPurchaseItem();
+    const row = $('purchaseItems').lastElementChild;
+    row.querySelector('.purchaseItemSelect').value =
+      String(item.inventoryItem && item.inventoryItem._id
+        ? item.inventoryItem._id : item.inventoryItem);
+    row.querySelector('.purchaseQty').value = item.quantity;
+    row.querySelector('.purchaseCost').value = item.unitCost;
+  });
+
+  const button = $('purchaseForm').querySelector('[type="submit"]');
+  if (button) button.textContent = 'Update Purchase';
+  $('purchaseForm').scrollIntoView({behavior:'smooth'});
+}
+
+async function deletePurchase(id) {
+  if (!confirm('Delete this purchase and reverse its stock? This will fail safely if the purchased stock has already been consumed.')) return;
+
+  try {
+    await invApi('/purchases/'+id, { method:'DELETE' });
+    notice('Purchase deleted and stock reversed.');
+    await loadInventory();
+  } catch(e) {
+    notice(e.message, true);
+  }
 }
 
 $('purchaseForm').onsubmit=async e=>{
   e.preventDefault();
 
+  const id = $('purchaseId').value;
   const items=[...document.querySelectorAll('.purchase-row')].map(row=>({
     inventoryItem:row.querySelector('.purchaseItemSelect').value,
     quantity:Number(row.querySelector('.purchaseQty').value),
     unitCost:Number(row.querySelector('.purchaseCost').value)
   }));
 
+  if (!items.length || items.some(x => !x.inventoryItem || x.quantity <= 0 || x.unitCost < 0)) {
+    return notice('Please enter valid purchase items.', true);
+  }
+
   try {
-    await invApi('/purchases',{
-      method:'POST',
+    await invApi(id ? '/purchases/'+id : '/purchases',{
+      method:id ? 'PATCH' : 'POST',
       body:JSON.stringify({
         supplier:$('purchaseSupplier').value,
         invoiceNo:$('purchaseInvoice').value,
@@ -1151,10 +1212,8 @@ $('purchaseForm').onsubmit=async e=>{
       })
     });
 
-    notice('Purchase saved and stock updated successfully.');
-    $('purchaseForm').reset();
-    $('purchaseItems').innerHTML='';
-    addPurchaseItem();
+    notice(id ? 'Purchase updated and stock reconciled.' : 'Purchase saved and stock updated successfully.');
+    resetPurchaseForm();
     await loadInventory();
   } catch(e) {
     notice(e.message,true);
@@ -1176,7 +1235,7 @@ async function loadExpenses() {
     inventoryData.expenses=d.expenses||[];
 
     $('expenseTable').innerHTML=table(
-      ['Category','Description','Amount','Date','Payment','Notes','Action'],
+      ['Category','Description','Amount','Date','Payment','Notes','Actions'],
       inventoryData.expenses.map(x=>`<tr>
         <td>${esc(x.category)}</td>
         <td>${esc(x.description)}</td>
@@ -1184,7 +1243,10 @@ async function loadExpenses() {
         <td>${date(x.date)}</td>
         <td>${esc(x.paymentMethod)}</td>
         <td>${esc(x.notes)}</td>
-        <td><button class="danger" onclick="deleteExpense('${x._id}')">Delete</button></td>
+        <td><div class="actions">
+        <button class="primary" onclick="editExpense('${x._id}')">Edit</button>
+        <button class="danger" onclick="deleteExpense('${x._id}')">Delete</button>
+      </div></td>
       </tr>`).join('')
     );
   } catch(e) {
@@ -1192,24 +1254,48 @@ async function loadExpenses() {
   }
 }
 
+function editExpense(id) {
+  const x = inventoryData.expenses.find(e => e._id === id);
+  if (!x) return;
+
+  $('expenseId').value = x._id;
+  $('expenseCategory').value = x.category;
+  $('expenseDescription').value = x.description;
+  $('expenseAmount').value = x.amount;
+  $('expenseDate').value = new Date(x.date).toLocaleDateString('en-CA');
+  $('expenseMethod').value = x.paymentMethod || 'Cash';
+  $('expenseNotes').value = x.notes || '';
+  $('expenseSaveButton').textContent = 'Update Expense';
+  $('expenseForm').scrollIntoView({behavior:'smooth'});
+}
+
+function resetExpenseForm() {
+  $('expenseForm').reset();
+  $('expenseId').value = '';
+  $('expenseSaveButton').textContent = 'Save Expense';
+}
+
 $('expenseForm').onsubmit=async e=>{
   e.preventDefault();
 
+  const id = $('expenseId').value;
+  const body = {
+    category:$('expenseCategory').value,
+    description:$('expenseDescription').value,
+    amount:Number($('expenseAmount').value),
+    date:$('expenseDate').value,
+    paymentMethod:$('expenseMethod').value,
+    notes:$('expenseNotes').value
+  };
+
   try {
-    await invApi('/expenses',{
-      method:'POST',
-      body:JSON.stringify({
-        category:$('expenseCategory').value,
-        description:$('expenseDescription').value,
-        amount:Number($('expenseAmount').value),
-        date:$('expenseDate').value,
-        paymentMethod:$('expenseMethod').value,
-        notes:$('expenseNotes').value
-      })
+    await invApi(id ? '/expenses/'+id : '/expenses',{
+      method:id ? 'PATCH' : 'POST',
+      body:JSON.stringify(body)
     });
 
-    notice('Expense recorded successfully.');
-    $('expenseForm').reset();
+    notice(id ? 'Expense updated successfully.' : 'Expense recorded successfully.');
+    resetExpenseForm();
     await loadExpenses();
   } catch(e) {
     notice(e.message,true);

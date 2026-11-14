@@ -51,7 +51,20 @@ const foodOrderSchema = new mongoose.Schema({
     default: 'Unpaid'
   },
   stockDeducted: { type: Boolean, default: false },
-  stockDeductedAt: { type: Date, default: null }
+  stockDeductedAt: { type: Date, default: null },
+  stockDeductionSnapshot: [{
+    inventoryItem: {
+      type: require('mongoose').Schema.Types.ObjectId,
+      ref: 'InventoryItem'
+    },
+    itemName: String,
+    unit: String,
+    quantity: {
+      type: Number,
+      required: true,
+      min: 0.0001
+    }
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('FoodOrder', foodOrderSchema);
