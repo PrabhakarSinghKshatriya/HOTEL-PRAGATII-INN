@@ -59,6 +59,63 @@ router.get('/data', async (req, res) => {
       }).lean()
     ]);
 
+    // Derive actual room occupancy from confirmed bookings.
+    // Maintenance is always preserved.
+    const now = new Date();
+
+    const activeRoomNumbers = new Set(
+      bookings
+        .filter(b =>
+          ['Confirmed', 'Checked-in'].includes(b.status) &&
+          new Date(b.checkout) > now
+        )
+        .map(b => Number(b.roomNumber))
+    );
+
+    const activeRoomIds = new Set(
+      bookings
+        .filter(b =>
+          ['Confirmed', 'Checked-in'].includes(b.status) &&
+          new Date(b.checkout) > now &&
+          b.roomId
+        )
+        .map(b => String(b.roomId))
+    );
+
+    // Synchronize derived occupancy with MongoDB.
+    // Never overwrite Maintenance, even if an admin changes it concurrently.
+    const roomStatusUpdates = [];
+
+    rooms.forEach(room => {
+      if (room.status === 'Maintenance') return;
+
+      const hasActiveBooking =
+        activeRoomNumbers.has(Number(room.roomNumber)) ||
+        activeRoomIds.has(String(room._id));
+
+      const expectedStatus = hasActiveBooking ? 'Occupied' : 'Available';
+
+      if (room.status !== expectedStatus) {
+        room.status = expectedStatus;
+
+        roomStatusUpdates.push({
+          updateOne: {
+            filter: {
+              _id: room._id,
+              status: { $ne: 'Maintenance' }
+            },
+            update: {
+              $set: { status: expectedStatus }
+            }
+          }
+        });
+      }
+    });
+
+    if (roomStatusUpdates.length) {
+      await Room.bulkWrite(roomStatusUpdates);
+    }
+
     const paid = [...allBookings, ...allOrders]
       .filter(x => x.paymentStatus === 'Paid')
       .reduce((sum, x) => sum + Number(x.total || 0), 0);
@@ -311,6 +368,45 @@ router.patch('/rooms/:id', async (req, res) => {
     }
 
     if (updates.price !== undefined) updates.price = Number(updates.price);
+
+    if (
+      updates.status !== undefined &&
+      !['Available', 'Occupied', 'Maintenance'].includes(updates.status)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid room status'
+      });
+    }
+
+    const existingRoom = await Room.findById(req.params.id);
+
+    if (!existingRoom) {
+      return res.status(404).json({
+        success: false,
+        message: 'Room not found'
+      });
+    }
+
+    // Never manually mark a room Available while an active
+    // confirmed or checked-in booking exists.
+    if (updates.status === 'Available') {
+      const activeBooking = await Booking.findOne({
+        $or: [
+          { roomId: existingRoom._id },
+          { roomNumber: existingRoom.roomNumber }
+        ],
+        status: { $in: ['Confirmed', 'Checked-in'] },
+        checkout: { $gt: new Date() }
+      }).lean();
+
+      if (activeBooking) {
+        return res.status(409).json({
+          success: false,
+          message: 'This room has an active confirmed booking and cannot be marked Available.'
+        });
+      }
+    }
 
     const room = await Room.findByIdAndUpdate(
       req.params.id,

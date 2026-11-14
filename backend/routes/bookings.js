@@ -97,7 +97,10 @@ router.get('/rooms', async (req, res) => {
       .lean();
 
     if (!checkin || !checkout) {
-      return res.json({ success: true, rooms });
+      const availableRooms = rooms.filter(
+        room => room.status === 'Available'
+      );
+      return res.json({ success: true, rooms: availableRooms });
     }
 
     const start = new Date(checkin);
@@ -297,25 +300,96 @@ router.get('/admin/all', adminAuth, async (req, res) => {
   }
 });
 
-// Admin: Update booking status
+// Admin: Update booking status and synchronize room status
 router.patch('/admin/:id/status', adminAuth, async (req, res) => {
   try {
-    const allowed = ['Pending', 'Confirmed', 'Checked-in', 'Completed', 'Cancelled'];
+    const allowed = [
+      'Pending',
+      'Confirmed',
+      'Checked-in',
+      'Completed',
+      'Cancelled'
+    ];
 
-    if (!allowed.includes(req.body.status)) {
-      return res.status(400).json({ success: false, message: 'Invalid booking status' });
+    const newStatus = req.body.status;
+
+    if (!allowed.includes(newStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking status'
+      });
     }
 
     const booking = await Booking.findById(req.params.id);
 
     if (!booking) {
-      return res.status(404).json({ success: false, message: 'Booking not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Find the associated room
+    let room = booking.roomId
+      ? await Room.findById(booking.roomId)
+      : null;
+
+    if (!room && booking.roomNumber) {
+      room = await Room.findOne({
+        roomNumber: booking.roomNumber
+      });
+    }
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: 'Associated room not found'
+      });
+    }
+
+    // Never confirm or check-in a maintenance room
+    if (
+      ['Confirmed', 'Checked-in'].includes(newStatus) &&
+      room.status === 'Maintenance'
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: 'This room is under maintenance and cannot be booked.'
+      });
     }
 
     const previousStatus = booking.status;
-    booking.status = req.body.status;
+
+    booking.status = newStatus;
     await booking.save();
 
+    // Synchronize the actual Room collection
+    // Maintenance status is always preserved.
+    if (room.status !== 'Maintenance') {
+      if (['Confirmed', 'Checked-in'].includes(newStatus)) {
+        room.status = 'Occupied';
+        await room.save();
+      } else {
+        // Check whether another confirmed or checked-in booking
+        // still requires this room.
+        const otherActiveBooking = await Booking.findOne({
+          _id: { $ne: booking._id },
+          $or: [
+            { roomId: room._id },
+            { roomNumber: room.roomNumber }
+          ],
+          status: { $in: ['Confirmed', 'Checked-in'] },
+          checkout: { $gt: new Date() }
+        }).lean();
+
+        if (!otherActiveBooking) {
+          room.status = 'Available';
+          await room.save();
+        }
+      }
+    }
+
+    // Preserve existing customer notifications
     if (previousStatus !== booking.status) {
       const messages = {
         Confirmed: 'Your room booking has been confirmed by the hotel.',
@@ -330,14 +404,25 @@ router.patch('/admin/:id/status', adminAuth, async (req, res) => {
         phone: booking.phone,
         type: 'booking',
         title: `Booking ${booking.status}`,
-        message: messages[booking.status] || `Your booking status is now ${booking.status}.`,
+        message: messages[booking.status] ||
+          `Your booking status is now ${booking.status}.`,
         status: booking.status
       });
     }
 
-    res.json({ success: true, booking });
+    res.json({
+      success: true,
+      booking,
+      roomStatus: room.status
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Unable to update booking' });
+    console.error('Update booking and room status:', error);
+
+    res.status(500).json({
+      success: false,
+      message: 'Unable to update booking'
+    });
   }
 });
 
