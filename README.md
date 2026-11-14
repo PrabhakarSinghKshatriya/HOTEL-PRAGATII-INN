@@ -1,3 +1,15 @@
+🌐 Live Website
+
+Visit Hotel Pragati:
+https://hotel-pragatii-inn.onrender.com/
+
+Explore the live Hotel Pragati website, browse available rooms, make booking requests, explore the food menu, and experience the online ordering system.
+
+<p align="center">
+  <a href="https://hotel-pragatii-inn.onrender.com/">
+    <strong>🚀 Visit Live Website</strong>
+  </a>
+</p>
 🏨 HOTEL PRAGATI – Hotel Booking & Management System
 
 <p align="center">
