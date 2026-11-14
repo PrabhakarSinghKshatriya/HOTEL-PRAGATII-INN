@@ -1,94 +1,129 @@
-🏨 HOTEL PRAGATI – Hotel Booking & Complete Management System
+🏨 HOTEL PRAGATI INN
+
+Complete Hotel Booking, Food Ordering & Management System
 
 <p align="center">
   <a href="https://hotel-pragatii-inn.onrender.com/">
-    <img src="images/Main.jpeg" alt="Hotel Pragati Logo" width="150">
+    <img src="images/Main.jpeg" alt="Hotel Pragati Inn" width="160">
   </a>
 </p>
 <h2 align="center">HOTEL PRAGATI INN</h2>
 <p align="center">
-  <b>A Complete Full-Stack Hotel Booking, Food Ordering, Inventory & Management System</b>
+  <strong>A Full-Stack Hotel Booking, Food Ordering, Inventory & Management Platform</strong>
+</p>
+<p align="center">
+  <a href="https://hotel-pragatii-inn.onrender.com/">
+    <img src="https://img.shields.io/badge/Live-Website-success?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Live Website">
+  </a>
+  <img src="https://img.shields.io/badge/Frontend-HTML%20%7C%20CSS%20%7C%20JavaScript-orange?style=for-the-badge" alt="Frontend">
+  <img src="https://img.shields.io/badge/Backend-Node.js%20%7C%20Express.js-green?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Backend">
+  <img src="https://img.shields.io/badge/Database-MongoDB-darkgreen?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB">
 </p>
 <p align="center">
   Online Room Booking • Food Ordering • UPI Payments • Inventory Management • Stock Tracking • Admin Dashboard
 </p>
 <p align="center">
-  <b>Designed & Developed by Prabhakar Singh Kshatriya</b>
+  <strong>Designed & Developed by Prabhakar Singh Kshatriya</strong>
 </p>
 
 ⸻
 
-🌐 Live Website
+🌐 Live Application
 
 <p align="center">
   <a href="https://hotel-pragatii-inn.onrender.com/">
-    <strong>🚀 VISIT HOTEL PRAGATI LIVE WEBSITE</strong>
+    <strong>🚀 VISIT HOTEL PRAGATI INN</strong>
   </a>
 </p>
 
-Explore the live Hotel Pragati website, browse available rooms, submit booking requests, explore the food menu, place food orders and experience the online hotel management system.
-
 Live Website: https://hotel-pragatii-inn.onrender.com/
+
+GitHub Repository: https://github.com/PrabhakarSinghKshatriya/HOTEL-PRAGATII-INN
+
+Explore the hotel website, browse available rooms, submit booking requests, explore the food menu, place food orders, submit UPI transaction references and experience the integrated hotel management platform.
 
 ⸻
 
-📌 About The Project
+📌 About the Project
 
-Hotel Pragati is a full-stack hotel booking and management platform developed to simplify hotel operations and provide customers with a convenient online experience.
+HOTEL PRAGATI INN is a full-stack hotel booking and management system designed to simplify hotel operations and provide customers with a convenient online experience.
 
-The system combines customer-facing hotel services with a separate administrator-only management dashboard.
+The platform combines a customer-facing website with a separate administrator-only dashboard, allowing customers and hotel administrators to interact with the system through dedicated interfaces.
 
-Customers can explore hotel rooms, submit booking requests, browse the food menu, place food orders and submit UPI transaction details.
+Customers can:
 
-Administrators can manage hotel bookings, food orders, room availability, food menus, inventory, stock movements, purchases, expenses, payments, promotional offers, notifications and business reports.
+* Explore hotel information and available rooms.
+* Submit room booking requests.
+* Browse food menus and prices.
+* Place food orders online.
+* Make payments through UPI QR codes.
+* Submit transaction reference numbers.
+* Track booking and order information.
+* Receive relevant notifications.
 
-The platform also includes an integrated inventory management system that connects food ordering operations with stock management to improve inventory accuracy and reduce manual work.
+Administrators can:
 
-The main objective is to provide a centralized, responsive and efficient solution for managing hotel operations.
+* Manage room bookings and availability.
+* Manage food menus and customer orders.
+* Monitor inventory and stock levels.
+* Manage purchases and expenses.
+* Verify submitted payments.
+* Create and manage promotional offers.
+* Monitor notifications and operational activities.
+* Access reports and business information.
+
+The platform also includes an integrated inventory management system with transaction-based stock operations to improve data consistency and reduce manual inventory management.
+
+🎯 Project Objectives
+
+* Digitize hotel booking operations.
+* Simplify food ordering and order management.
+* Centralize hotel administration.
+* Improve inventory and stock tracking.
+* Maintain organized financial records.
+* Provide a responsive customer experience.
+* Reduce manual operational work.
 
 ⸻
 
 ✨ Key Features
 
-👤 1. Customer Website
+1. 👤 Customer Website
 
-* Responsive hotel website.
-* Attractive homepage and hotel information.
+* Responsive and mobile-friendly interface.
+* Hotel homepage and information.
 * Room booking functionality.
 * AC and Non-AC room options.
 * Room availability information.
-* Online food menu.
-* Food ordering system.
-* Hindi and English food names.
-* Half and Full food item pricing.
+* Digital food menu.
+* Hindi and English food item names.
 * Shopping cart and checkout.
-* UPI QR code payment.
-* UTR / Transaction ID submission.
+* UPI QR-based payment support.
+* UTR / transaction reference submission.
 * Booking and order notifications.
 * Active promotional offers.
 * Dynamic pricing and availability.
-* Mobile-friendly interface.
 
-🛏️ 2. Room Booking Management
+2. 🛏️ Room Booking Management
 
 * AC room booking.
 * Non-AC room booking.
 * Room availability management.
 * Customer booking information.
-* Booking reference number.
+* Booking reference numbers.
 * Booking date and details.
 * Payment method selection.
 * UPI transaction reference submission.
 * Booking status management.
-* Admin-side booking management.
+* Administrator-side booking management.
 * Room price management.
 * Room availability updates.
 
-🍽️ 3. Food Ordering Management
+3. 🍽️ Food Ordering Management
 
 * Digital food menu.
 * Multiple food categories.
-* Hindi and English item names.
+* Hindi and English food names.
 * Single-price food items.
 * Half and Full pricing options.
 * Add-to-cart functionality.
@@ -97,48 +132,42 @@ The main objective is to provide a centralized, responsive and efficient solutio
 * UPI QR payment support.
 * UTR submission.
 * Customer order information.
-* Order status tracking.
-* Admin-side food order management.
+* Food order status tracking.
+* Administrator-side order management.
 * 15-minute food preparation/wait information.
 
-📦 4. Advanced Inventory Management
+4. 📦 Advanced Inventory Management
 
 An integrated inventory management system helps administrators manage hotel ingredients, stock quantities and food-related inventory operations.
 
 Inventory Operations
 
-* Add new inventory items.
-* Update inventory information.
-* Delete inventory items.
-* Manage stock quantities.
-* Track available stock.
-* Manage inventory units.
+* Add, update and delete inventory items.
+* Manage inventory quantities and units.
 * Configure minimum stock levels.
-* Monitor low-stock items.
+* Monitor available stock.
+* Identify low-stock items.
 * Maintain inventory records.
 * Track stock adjustments.
 
 Stock Management
 
 * Automatic stock deduction for applicable food orders.
-* Stock adjustment functionality.
 * Stock addition and reduction.
 * Inventory quantity validation.
-* Prevention of invalid stock deductions.
 * Stock availability verification.
-* Stock consistency during order processing.
+* Prevention of invalid stock deductions.
+* Stock consistency during food order processing.
 
 Atomic Stock Management
 
-The inventory service includes transaction-based stock operations to improve data consistency.
-
-* Atomic inventory updates.
 * MongoDB transaction-based stock operations.
 * Session-based database operations.
+* Atomic inventory updates.
 * Stock validation before deduction.
-* Prevention of overselling due to concurrent stock updates.
+* Prevention of overselling caused by concurrent stock updates.
 * Rollback support when transactional operations fail.
-* Consistent stock updates during food order processing.
+* Consistent inventory updates during food order processing.
 
 Food Recipe & Ingredient Validation
 
@@ -146,21 +175,17 @@ Food Recipe & Ingredient Validation
 * Ingredient availability checks.
 * Stock requirement calculations.
 * Inventory validation before applicable food order operations.
-* Improved coordination between food orders and inventory.
+* Coordination between food ordering and inventory.
 
 Order Stock Tracking
 
 * Stock deduction snapshots associated with food orders.
-* Tracking inventory deductions.
+* Inventory deduction tracking.
 * Order status transition validation.
 * Controlled stock-related order updates.
 * Improved inventory traceability.
 
-🛒 5. Purchase Management
-
-Purchase management helps administrators maintain records of inventory purchases.
-
-Features include:
+5. 🛒 Purchase Management
 
 * Add purchase records.
 * Update purchase details.
@@ -170,30 +195,29 @@ Features include:
 * Track purchase-related expenses.
 * Integrate purchase operations with inventory management.
 
-💰 6. Expense Management
+6. 💰 Expense Management
 
 * Add expense records.
 * Update expenses.
 * Delete expenses.
-* Maintain expense information.
-* Track hotel operating expenses.
+* Maintain hotel operating expenses.
 * Organize financial records.
+* Track business expenditure.
 * Support financial reporting.
 
-🔔 7. Notifications Management
+7. 🔔 Notification Management
 
-* Admin dashboard notifications.
-* Food order-related notifications.
+* Administrator dashboard notifications.
+* Customer-related notifications.
+* Food order notifications.
 * Inventory-related alerts.
 * Low-stock notifications.
 * Management activity notifications.
 * Improved visibility of important hotel operations.
 
-💳 8. Payment Management
+8. 💳 Payment Management
 
 The platform supports UPI QR-based payment submission and administrator-side transaction verification.
-
-Features include:
 
 * UPI QR code payments.
 * Customer transaction ID submission.
@@ -203,11 +227,11 @@ Features include:
 * Payment verification timestamps.
 * Separate booking and food-order payment handling.
 
-Important: Submitting a UTR or transaction reference does not automatically confirm payment. Administrators must verify the submitted transaction.
+Payment Security: Submitting a UTR or transaction reference does not automatically confirm a payment. The administrator must independently verify the transaction before marking it as paid.
 
-🔐 9. Admin Dashboard
+9. 🔐 Administrator Dashboard
 
-A separate administrator-only dashboard provides centralized control over hotel operations.
+A separate administrator-only dashboard provides centralized management of hotel operations.
 
 Dashboard Management
 
@@ -219,15 +243,14 @@ Dashboard Management
 * Purchase management.
 * Expense management.
 * Room management.
-* Room availability management.
-* Room price management.
+* Room availability and pricing.
 * Food menu management.
 * Food category management.
-* Offers management.
+* Promotional offers management.
 * Payment verification.
 * Customer information management.
 * Order status management.
-* Admin notifications.
+* Administrator notifications.
 * Reports and analytics.
 
 Inventory Dashboard
@@ -237,7 +260,7 @@ Inventory Dashboard
 * Stock adjustments.
 * Purchase records.
 * Low-stock monitoring.
-* Inventory-related notifications.
+* Inventory notifications.
 * Food-order inventory integration.
 
 Financial Management
@@ -249,19 +272,19 @@ Financial Management
 * Payment summaries.
 * Financial reporting.
 
-🎁 10. Offers & Discounts Management
+10. 🎁 Offers & Discounts Management
 
 * Create promotional offers.
-* Update offer details.
+* Update offer information.
 * Activate and deactivate offers.
 * Manage discount information.
 * Display active offers on the customer website.
 * Apply eligible offers to booking calculations.
 * Apply eligible offers to food-order calculations.
 
-📊 11. Reports & Analytics
+11. 📊 Reports & Analytics
 
-The admin dashboard provides reporting functionality to help administrators monitor hotel operations.
+The administrator dashboard provides reporting functionality to monitor hotel operations.
 
 * Booking reports.
 * Food order reports.
@@ -280,78 +303,71 @@ The admin dashboard provides reporting functionality to help administrators moni
 
 🛠️ Technology Stack
 
-Frontend
-
-* HTML5
-* CSS3
-* JavaScript
-* Responsive Web Design
-
-Backend
-
-* Node.js
-* Express.js
-* REST APIs
-
-Database
-
-* MongoDB
-* Mongoose ODM
-
-Security
-
-* JWT Authentication
-* bcryptjs
-* Helmet
-* CORS
-* Express Rate Limit
-* Environment Variables
-
-Validation
-
-* Zod
-* Server-side validation
-* Inventory stock validation
-* Food order validation
-
-Payment
-
-* UPI QR Code
-* UTR / Transaction Reference Verification
-
-Deployment & Version Control
-
-* Git
-* GitHub
-* Render
+Category	Technologies
+Frontend	HTML5, CSS3, JavaScript
+Backend	Node.js, Express.js
+Database	MongoDB, Mongoose ODM
+Authentication	JWT Authentication
+Password Security	bcryptjs
+Security	Helmet, CORS, Express Rate Limit
+Validation	Zod, Server-side Validation
+Payment	UPI QR, UTR Verification
+Version Control	Git, GitHub
+Deployment	Render
+Configuration	Environment Variables
 
 ⸻
 
 🏗️ System Architecture
 
-The application follows a full-stack architecture.
+The application follows a full-stack client-server architecture.
 
-Customer Website
+                 HOTEL PRAGATI INN
+                         |
+             -------------------------
+             |                       |
+       Customer Website         Admin Dashboard
+             |                       |
+             |                  Admin Login
+             |                       |
+             |                  Protected APIs
+             |                       |
+             -----------+------------
+                        |
+                   Backend API
+                   Node.js
+                   Express.js
+                        |
+             -----------------------
+             |          |          |
+          Booking     Food     Inventory
+           APIs      APIs        APIs
+             |          |          |
+             -----------------------
+                        |
+                     MongoDB
+                        |
+             -----------------------
+             |          |          |
+          Bookings    Orders    Inventory
+             |
+       Purchases / Expenses
+             |
+       Payment Records
 
-Customers interact with the frontend to access room booking, food ordering and payment submission functionality.
+Architecture Components
 
-Backend API
-
-The Node.js and Express backend handles application logic, authentication, booking operations, food orders, inventory operations, payments and administrative requests.
-
-Database
-
-MongoDB stores application data, including bookings, food orders, inventory items, purchases, expenses and other management records.
-
-Admin Dashboard
-
-Administrators access protected management functionality through a separate dashboard.
+* Customer Website: Handles room bookings, food ordering and customer interactions.
+* Admin Dashboard: Provides protected administrative functionality.
+* Backend API: Processes application logic, authentication, booking operations, food orders, inventory and payments.
+* Database: MongoDB stores application and management records.
+* Inventory Service: Coordinates stock validation, deduction and inventory updates.
 
 ⸻
 
 📂 Project Structure
 
-hotel-pragati/
+HOTEL-PRAGATII-INN/
 │
 ├── admin/
 │   ├── login.html
@@ -361,11 +377,10 @@ hotel-pragati/
 │   ├── config/
 │   ├── middleware/
 │   ├── models/
-│   │
 │   ├── routes/
 │   │   ├── food.js
 │   │   ├── inventory.js
-│   │   └── ...
+│   │   └── notifications.js
 │   │
 │   ├── utils/
 │   │   └── inventoryService.js
@@ -377,30 +392,41 @@ hotel-pragati/
 │
 ├── js/
 │   ├── config.js
-│   └── ...
+│   ├── app.js
+│   └── customer-notifications.js
 │
 ├── images/
 │   └── Main.jpeg
 │
 ├── index.html
+├── my-bookings.html
 ├── server.js
 ├── package.json
 ├── package-lock.json
 └── README.md
 
-Note: This represents the main project components. Additional files and folders may exist in the repository.
+Note: This is a representative project structure. Additional application files, routes, models and assets may exist in the repository.
 
 ⸻
 
 ⚙️ Installation & Setup
 
-Follow these steps to run Hotel Pragati locally.
+Follow these steps to run the project locally.
 
-1. Clone Repository
+Prerequisites
+
+Install the following:
+
+* Node.js
+* npm
+* MongoDB database
+* Git
+
+1. Clone the Repository
 
 git clone https://github.com/PrabhakarSinghKshatriya/HOTEL-PRAGATII-INN.git
 
-2. Navigate to Project
+2. Navigate to the Project
 
 cd HOTEL-PRAGATII-INN
 
@@ -410,92 +436,90 @@ npm install
 
 4. Configure Environment Variables
 
-Create a .env file in the project root directory.
+Create a .env file in the project root.
 
-Configure the required environment variables according to the backend configuration.
+Configure the environment variables required by the application.
 
 Example:
 
-PORT=5000
+PORT=5050
 MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_secure_jwt_secret
 
-Add any other variables required by the application, including payment or notification configuration where applicable.
+Add any additional variables required by your backend configuration.
 
-Security Notice:
+Security Recommendations
 
 * Never upload .env files to GitHub.
 * Never expose MongoDB credentials.
 * Never expose JWT secrets.
 * Keep private API keys secure.
+* Use strong production secrets.
 
 5. Start the Application
 
 npm start
 
-For development:
+For development, if the development script is configured:
 
 npm run dev
 
-6. Open the Website
+6. Access the Application
 
-Run the customer-facing website using a local development server if required by the project configuration.
+Open:
 
-Example:
+http://localhost:5050
 
-npx http-server . -p 8080
-
-Visit:
-
-http://localhost:8080
+If the customer-facing frontend is configured to run separately, use the appropriate local development server and port.
 
 ⸻
 
 🌐 Deployment
 
-Hotel Pragati is deployed using Render.
+The application is deployed using Render.
 
-Live Application
+Component	Platform
+Application Hosting	Render
+Database	MongoDB
+Source Code	GitHub
+Version Control	Git
+
+Live Application:
 
 https://hotel-pragatii-inn.onrender.com/
 
-GitHub Repository
+GitHub Repository:
 
 https://github.com/PrabhakarSinghKshatriya/HOTEL-PRAGATII-INN
 
-Deployment Technologies
-
-* GitHub for source code management.
-* Render for application hosting.
-* MongoDB for database management.
-
-The application can be updated through GitHub commits and deployed through the configured Render deployment workflow.
+The configured deployment workflow allows application updates through GitHub commits and the connected Render deployment process.
 
 ⸻
 
 🔒 Security & Data Consistency
 
-The application incorporates several security and data consistency measures.
+The application incorporates several security and data consistency mechanisms:
 
-* Separate administrator login.
+* Separate administrator authentication.
 * Protected administrative operations.
 * JWT-based authentication.
-* Password hashing.
-* Secure environment variables.
-* Server-side validation.
+* Password hashing using bcryptjs.
+* Environment-based configuration.
+* Server-side input validation.
 * Payment verification workflow.
 * Restricted administrative operations.
-* MongoDB-backed application data.
+* MongoDB-backed data storage.
 * Atomic inventory update operations.
 * Transaction-based stock management.
 * Food order validation.
 * Controlled order status transitions.
+* Inventory consistency checks.
 
 ⸻
 
 📱 Responsive Design
 
-The customer-facing website is designed to support:
+The customer-facing interface is designed to support multiple screen sizes:
 
 * Desktop computers.
 * Laptops.
@@ -503,7 +527,7 @@ The customer-facing website is designed to support:
 * Android smartphones.
 * iPhones.
 
-The interface focuses on providing a convenient experience across different screen sizes.
+The responsive layout aims to provide a consistent and convenient browsing experience across devices.
 
 ⸻
 
@@ -516,45 +540,47 @@ Potential future improvements include:
 * Advanced inventory analytics.
 * Automated purchase management.
 * Advanced financial reporting.
-* Customer booking history.
 * Automated payment reconciliation.
-* Enhanced notification system.
+* Enhanced notification capabilities.
 * Advanced hotel performance analytics.
+* More comprehensive customer booking history.
 
 ⸻
 
 👨‍💻 Developer
 
-Prabhakar Singh Kshatriya
-
-Full-Stack Web Developer
-
-GitHub:
-
-https://github.com/PrabhakarSinghKshatriya
+<p align="center">
+  <strong>Prabhakar Singh Kshatriya</strong><br>
+  Full-Stack Web Developer
+</p>
+<p align="center">
+  <a href="https://github.com/PrabhakarSinghKshatriya">
+    <img src="https://img.shields.io/badge/GitHub-PrabhakarSinghKshatriya-black?style=for-the-badge&logo=github" alt="GitHub Profile">
+  </a>
+</p>
 
 ⸻
 
 📄 License
 
-This project is developed for Hotel Pragati.
+This project is developed for Hotel Pragati Inn.
 
 All rights reserved unless otherwise specified by the repository owner.
 
 ⸻
 
 <p align="center">
-  <h2 align="center">🏨 HOTEL PRAGATI INN</h2>
-  <p align="center">
-    <b>Your Comfort, Our Priority.</b>
-  </p>
-  <p align="center">
-    <a href="https://hotel-pragatii-inn.onrender.com/">
-      🚀 Visit Live Website
-    </a>
-  </p>
-  <br>
-  <p align="center">
-    <b>Developed & Managed By Prabhakar Singh Kshatriya</b>
-  </p>
+  <img src="images/Main.jpeg" alt="Hotel Pragati Inn" width="110">
+</p>
+<h2 align="center">🏨 HOTEL PRAGATI INN</h2>
+<p align="center">
+  <strong>Your Comfort, Our Priority.</strong>
+</p>
+<p align="center">
+  <a href="https://hotel-pragatii-inn.onrender.com/">
+    <strong>🚀 VISIT LIVE WEBSITE</strong>
+  </a>
+</p>
+<p align="center">
+  Designed & Developed by <strong>Prabhakar Singh Kshatriya</strong>
 </p>
