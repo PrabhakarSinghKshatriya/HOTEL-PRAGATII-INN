@@ -572,6 +572,8 @@ function initFoodOrder() {
     return variants;
   }
 
+  let activeFoodCategory = 'all';
+
   function renderTabs() {
     if (!tabs) return;
 
@@ -678,6 +680,15 @@ function initFoodOrder() {
         </article>
       `;
     }).join('');
+
+    // Preserve selected category after automatic menu/offer refresh.
+    grid.querySelectorAll('.menu-item').forEach(card => {
+      card.style.display =
+        activeFoodCategory === 'all' ||
+        card.dataset.cat === activeFoodCategory
+          ? ''
+          : 'none';
+    });
   }
 
   function renderCart() {
@@ -822,6 +833,7 @@ function initFoodOrder() {
       tab.classList.add('active');
 
       const category = tab.dataset.cat;
+      activeFoodCategory = category;
 
       grid.querySelectorAll('.menu-item').forEach(card => {
         card.style.display =
