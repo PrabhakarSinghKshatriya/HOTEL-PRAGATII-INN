@@ -49,7 +49,9 @@ const foodOrderSchema = new mongoose.Schema({
     type: String,
     enum: ['Unpaid', 'Pending', 'Paid', 'Refunded'],
     default: 'Unpaid'
-  }
+  },
+  stockDeducted: { type: Boolean, default: false },
+  stockDeductedAt: { type: Date, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('FoodOrder', foodOrderSchema);

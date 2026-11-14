@@ -81,6 +81,10 @@ textarea{min-height:70px}
   <button data-page="bookings">🛏️ Room Bookings</button>
   <button data-page="rooms">🏨 Room Management</button>
   <button data-page="orders">🍽️ Food Orders</button>
+  <button data-page="inventory">📦 Inventory Management</button>
+  <button data-page="recipes">🧾 Recipe Management</button>
+  <button data-page="purchases">🛒 Stock Purchases</button>
+  <button data-page="expenses">💰 Expenses</button>
   <button data-page="menu">📋 Food Menu</button>
   <button data-page="offers">🎁 Offers Management</button>
   <button data-page="customers">👥 Customers</button>
@@ -157,6 +161,149 @@ textarea{min-height:70px}
 <button class="muted" type="button" onclick="resetMenuForm()">Clear</button>
 </form></div>
 <div class="panel"><h3>Complete Menu</h3><div id="menuTable"></div></div>
+</section>
+
+
+<section id="inventory" class="section">
+<h2>📦 Inventory Management</h2>
+
+<div class="cards" id="inventoryStats"></div>
+
+<div class="panel">
+<h3 id="inventoryFormTitle">Add Inventory Item</h3>
+<form id="inventoryForm">
+<input type="hidden" id="inventoryId">
+<div class="formgrid">
+<label>Item Name<input id="invName" required placeholder="Rice, Oil, Paneer"></label>
+<label>SKU<input id="invSku" placeholder="Optional unique SKU"></label>
+<label>Category<input id="invCategory" placeholder="Grocery, Dairy, Vegetables"></label>
+<label>Unit<input id="invUnit" required placeholder="kg, litre, pcs"></label>
+<label>Opening Stock<input id="invStock" type="number" min="0" step="0.001" value="0"></label>
+<label>Reorder Level<input id="invReorder" type="number" min="0" step="0.001" value="0"></label>
+<label>Cost Per Unit (₹)<input id="invCost" type="number" min="0" step="0.01" value="0"></label>
+<label>Supplier<input id="invSupplier"></label>
+</div><br>
+<button class="primary">Save Item</button>
+<button type="button" class="muted" onclick="resetInventoryForm()">Clear</button>
+</form>
+</div>
+
+<div class="panel">
+<h3>Stock Adjustment</h3>
+<form id="adjustmentForm">
+<div class="formgrid">
+<label>Select Item<select id="adjustItem" required></select></label>
+<label>Quantity (+ Add / - Remove)<input id="adjustQuantity" type="number" step="0.001" required></label>
+<label>Reason<input id="adjustNote" placeholder="Stock correction"></label>
+</div><br>
+<button class="primary">Update Stock</button>
+</form>
+</div>
+
+<div class="panel">
+<h3>⚠️ Low Stock Alerts</h3>
+<div id="lowStockTable"></div>
+</div>
+
+<div class="panel">
+<h3>All Inventory Items</h3>
+<div id="inventoryTable"></div>
+</div>
+
+<div class="panel">
+<h3>Recent Stock Movements</h3>
+<div id="movementTable"></div>
+</div>
+</section>
+
+<section id="recipes" class="section">
+<h2>🧾 Recipe Management</h2>
+<div class="panel">
+<h3>Create / Update Recipe</h3>
+<form id="recipeForm">
+<div class="formgrid">
+<label>Food Menu Item
+<select id="recipeMenuItem" required></select>
+</label>
+<label>Variant
+<select id="recipeVariant">
+<option value="single">Single</option>
+<option value="half">Half</option>
+<option value="full">Full</option>
+</select>
+</label>
+</div>
+<br>
+<h4>Ingredients</h4>
+<div id="recipeIngredients"></div>
+<button type="button" class="muted" onclick="addRecipeIngredient()">+ Add Ingredient</button>
+<br><br>
+<button class="primary">Save Recipe</button>
+</form>
+</div>
+<div class="panel">
+<h3>Configured Recipes</h3>
+<div id="recipeTable"></div>
+</div>
+</section>
+
+<section id="purchases" class="section">
+<h2>🛒 Stock Purchase Management</h2>
+<div class="panel">
+<form id="purchaseForm">
+<div class="formgrid">
+<label>Supplier Name<input id="purchaseSupplier" required></label>
+<label>Invoice Number<input id="purchaseInvoice"></label>
+<label>Purchase Date<input id="purchaseDate" type="date" required></label>
+<label>Notes<input id="purchaseNotes"></label>
+</div>
+<br>
+<h3>Purchase Items</h3>
+<div id="purchaseItems"></div>
+<button type="button" class="muted" onclick="addPurchaseItem()">+ Add Item</button>
+<br><br>
+<button class="primary">Save Purchase & Update Stock</button>
+</form>
+</div>
+<div class="panel">
+<h3>Recent Purchases</h3>
+<div id="purchaseTable"></div>
+</div>
+</section>
+
+<section id="expenses" class="section">
+<h2>💰 Expense Management</h2>
+<div class="panel">
+<form id="expenseForm">
+<div class="formgrid">
+<label>Category<input id="expenseCategory" required placeholder="Electricity, Salary, Maintenance"></label>
+<label>Description<input id="expenseDescription" required></label>
+<label>Amount (₹)<input id="expenseAmount" type="number" min="0.01" step="0.01" required></label>
+<label>Date<input id="expenseDate" type="date" required></label>
+<label>Payment Method
+<select id="expenseMethod">
+<option>Cash</option><option>UPI</option><option>Bank</option><option>Other</option>
+</select>
+</label>
+<label>Notes<input id="expenseNotes"></label>
+</div><br>
+<button class="primary">Save Expense</button>
+</form>
+</div>
+<div class="panel">
+<h3>Expense Records</h3>
+<div class="toolbar">
+<input type="date" id="expenseStart">
+<input type="date" id="expenseEnd">
+<button class="primary" onclick="loadExpenses()">Filter</button>
+</div>
+<div id="expenseTable"></div>
+</div>
+<div class="panel">
+<h3>Accounting Summary</h3>
+<div id="accountingSummary"></div>
+<button class="primary" onclick="loadAccountingReport()">Generate Accounting Report</button>
+</div>
 </section>
 
 <section id="offers" class="section">
@@ -353,7 +500,17 @@ document.addEventListener('click', event => {
   }
 });
 
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.page).classList.add('active')});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  $(b.dataset.page).classList.add('active');
+
+  if(['inventory','recipes','purchases','expenses'].includes(b.dataset.page)) {
+    loadInventory();
+    if(b.dataset.page==='expenses') loadExpenses();
+  }
+});
 
 function table(headers,rows){return `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows||'<tr><td colspan="12">No records found.</td></tr>'}</tbody></table>`}
 function statusSelect(value,values,fn){return `<select onchange="${fn}(this)" data-old="${esc(value)}">${values.map(v=>`<option ${v===value?'selected':''}>${v}</option>`).join('')}</select>`}
@@ -622,8 +779,462 @@ const offerData = await api('/api/admin/offers');
 
 state={...state,...d,offers:offerData.offers || []};
 renderOverview();renderBookings();renderOrders();renderRooms();renderMenu();renderOffers();renderCustomers();renderPayments();renderReports();
+  if(document.getElementById('recipeMenuItem')) {
+    $('recipeMenuItem').innerHTML='<option value="">Select Food Item</option>'+
+      (state.menu||[]).map(m=>`<option value="${esc(m.itemId)}">${esc(m.name)}</option>`).join('');
+  }
+  if(document.getElementById('inventory').classList.contains('active')) loadInventory();
 }catch(e){notice('Dashboard load failed: '+e.message,true)}
 }
+
+// ================= INVENTORY MANAGEMENT =================
+
+let inventoryData = {
+  items: [], recipes: [], lowStock: [],
+  movements: [], purchases: [], expenses: []
+};
+
+const invApi = (path, options={}) =>
+  api('/api/inventory' + path, options);
+
+function inventoryOptions(selected='') {
+  return inventoryData.items
+    .filter(x => x.isActive)
+    .map(x => `<option value="${x._id}" ${String(x._id)===String(selected)?'selected':''}>${esc(x.name)} (${esc(x.unit)})</option>`)
+    .join('');
+}
+
+async function loadInventory() {
+  try {
+    const d = await invApi('/dashboard');
+    inventoryData = {...inventoryData, ...d};
+
+    renderInventory();
+    renderRecipes();
+    renderPurchases();
+
+    if ($('expenseStart').value && $('expenseEnd').value) {
+      await loadExpenses();
+    }
+
+  } catch(e) {
+    notice('Inventory loading failed: ' + e.message, true);
+  }
+}
+
+function renderInventory() {
+  const items = inventoryData.items || [];
+  const active = items.filter(x => x.isActive);
+  const low = inventoryData.lowStock || [];
+
+  $('inventoryStats').innerHTML = [
+    ['Total Items', active.length],
+    ['Low Stock Items', low.length],
+    ['Total Stock Value', money(active.reduce((a,x)=>a+Number(x.currentStock||0)*Number(x.costPerUnit||0),0))],
+    ['Inactive Items', items.length-active.length]
+  ].map(([a,b])=>`<div class="card"><small>${a}</small><strong>${b}</strong></div>`).join('');
+
+  $('inventoryTable').innerHTML = table(
+    ['Item','SKU','Category','Stock','Reorder Level','Cost / Unit','Supplier','Actions'],
+    items.map(x=>`<tr>
+      <td>${esc(x.name)}</td>
+      <td>${esc(x.sku)}</td>
+      <td>${esc(x.category)}</td>
+      <td>${x.currentStock} ${esc(x.unit)}</td>
+      <td>${x.reorderLevel} ${esc(x.unit)}</td>
+      <td>${money(x.costPerUnit)}</td>
+      <td>${esc(x.supplier)}</td>
+      <td><div class="actions">
+        <button class="primary" onclick="editInventory('${x._id}')">Edit</button>
+        <button class="danger" onclick="deleteInventory('${x._id}')">Deactivate</button>
+      </div></td>
+    </tr>`).join('')
+  );
+
+  $('lowStockTable').innerHTML = table(
+    ['Item','Available','Reorder Level','Status'],
+    low.map(x=>`<tr>
+      <td>${esc(x.name)}</td>
+      <td>${x.currentStock} ${esc(x.unit)}</td>
+      <td>${x.reorderLevel} ${esc(x.unit)}</td>
+      <td><span class="badge">Low Stock</span></td>
+    </tr>`).join('')
+  );
+
+  $('movementTable').innerHTML = table(
+    ['Item','Type','Quantity','Previous','New Stock','Reference','Date'],
+    (inventoryData.movements||[]).map(m=>`<tr>
+      <td>${esc(m.inventoryItem?.name||'Deleted Item')}</td>
+      <td>${esc(m.type)}</td>
+      <td>${m.quantity}</td>
+      <td>${m.previousStock}</td>
+      <td>${m.newStock}</td>
+      <td>${esc(m.reference)}</td>
+      <td>${date(m.createdAt)}</td>
+    </tr>`).join('')
+  );
+
+  $('adjustItem').innerHTML =
+    '<option value="">Select Item</option>' + inventoryOptions();
+
+  $('recipeMenuItem').innerHTML =
+    '<option value="">Select Food Item</option>' +
+    (state.menu||[]).map(m=>`<option value="${esc(m.itemId)}">${esc(m.name)}</option>`).join('');
+
+  document.querySelectorAll('.recipeIngredientItem,.purchaseItemSelect')
+    .forEach(select=>{
+      const selected = select.value;
+      select.innerHTML = '<option value="">Select Inventory Item</option>' +
+        inventoryOptions(selected);
+    });
+}
+
+$('inventoryForm').onsubmit = async e => {
+  e.preventDefault();
+
+  const id = $('inventoryId').value;
+  const body = {
+    name: $('invName').value.trim(),
+    sku: $('invSku').value.trim(),
+    category: $('invCategory').value.trim(),
+    unit: $('invUnit').value.trim(),
+    currentStock: Number($('invStock').value),
+    reorderLevel: Number($('invReorder').value),
+    costPerUnit: Number($('invCost').value),
+    supplier: $('invSupplier').value.trim()
+  };
+
+  try {
+    if(id) {
+      delete body.currentStock;
+      await invApi('/items/'+id,{
+        method:'PATCH',body:JSON.stringify(body)
+      });
+    } else {
+      await invApi('/items',{
+        method:'POST',body:JSON.stringify(body)
+      });
+    }
+
+    notice(id?'Inventory item updated.':'Inventory item added.');
+    resetInventoryForm();
+    await loadInventory();
+  } catch(e) {
+    notice(e.message,true);
+  }
+};
+
+function editInventory(id) {
+  const x=inventoryData.items.find(i=>i._id===id);
+  if(!x)return;
+
+  $('inventoryId').value=id;
+  $('invName').value=x.name;
+  $('invSku').value=x.sku||'';
+  $('invCategory').value=x.category||'';
+  $('invUnit').value=x.unit;
+  $('invStock').value=x.currentStock;
+  $('invStock').disabled=true;
+  $('invReorder').value=x.reorderLevel;
+  $('invCost').value=x.costPerUnit;
+  $('invSupplier').value=x.supplier||'';
+  $('inventoryFormTitle').textContent='Edit Inventory Item';
+
+  $('inventoryForm').scrollIntoView({behavior:'smooth'});
+}
+
+function resetInventoryForm() {
+  $('inventoryForm').reset();
+  $('inventoryId').value='';
+  $('invStock').disabled=false;
+  $('inventoryFormTitle').textContent='Add Inventory Item';
+}
+
+async function deleteInventory(id) {
+  if(!confirm('Deactivate this inventory item?'))return;
+
+  try {
+    await invApi('/items/'+id,{method:'DELETE'});
+    notice('Inventory item deactivated.');
+    await loadInventory();
+  } catch(e) {
+    notice(e.message,true);
+  }
+}
+
+$('adjustmentForm').onsubmit = async e => {
+  e.preventDefault();
+
+  try {
+    await invApi('/adjustments',{
+      method:'POST',
+      body:JSON.stringify({
+        itemId:$('adjustItem').value,
+        quantity:Number($('adjustQuantity').value),
+        note:$('adjustNote').value
+      })
+    });
+
+    notice('Stock adjusted successfully.');
+    $('adjustmentForm').reset();
+    await loadInventory();
+  } catch(e) {
+    notice(e.message,true);
+  }
+};
+
+// RECIPE MANAGEMENT
+
+function addRecipeIngredient(item='',qty='') {
+  const row=document.createElement('div');
+  row.className='formgrid recipe-row';
+  row.style.marginBottom='10px';
+
+  row.innerHTML=`
+    <label>Inventory Item
+      <select class="recipeIngredientItem" required>
+        <option value="">Select Item</option>${inventoryOptions(item)}
+      </select>
+    </label>
+    <label>Quantity per serving
+      <input class="recipeIngredientQty" type="number" min="0.0001" step="0.0001" required value="${esc(qty)}">
+    </label>
+    <button type="button" class="danger" onclick="this.parentElement.remove()">Remove</button>
+  `;
+
+  $('recipeIngredients').appendChild(row);
+}
+
+function renderRecipes() {
+  $('recipeTable').innerHTML=table(
+    ['Menu Item','Variant','Ingredients','Actions'],
+    (inventoryData.recipes||[]).map(r=>`<tr>
+      <td>${esc(r.menuItemName||r.itemId)}</td>
+      <td>${esc(r.variant)}</td>
+      <td>${(r.ingredients||[]).map(i=>
+        `${esc(i.inventoryItem?.name||'Item')} × ${i.quantity} ${esc(i.inventoryItem?.unit||'')}`
+      ).join('<br>')}</td>
+      <td><button class="danger" onclick="deleteRecipe('${r._id}')">Delete</button></td>
+    </tr>`).join('')
+  );
+}
+
+$('recipeForm').onsubmit=async e=>{
+  e.preventDefault();
+
+  const ingredients=[...document.querySelectorAll('.recipe-row')].map(row=>({
+    inventoryItem:row.querySelector('.recipeIngredientItem').value,
+    quantity:Number(row.querySelector('.recipeIngredientQty').value)
+  }));
+
+  const itemId=$('recipeMenuItem').value;
+  const menu=state.menu.find(x=>x.itemId===itemId);
+
+  try {
+    await invApi('/recipes',{
+      method:'POST',
+      body:JSON.stringify({
+        itemId,
+        menuItemName:menu?.name||'',
+        variant:$('recipeVariant').value,
+        ingredients
+      })
+    });
+
+    notice('Recipe saved successfully.');
+    $('recipeForm').reset();
+    $('recipeIngredients').innerHTML='';
+    addRecipeIngredient();
+    await loadInventory();
+  } catch(e) {
+    notice(e.message,true);
+  }
+};
+
+async function deleteRecipe(id) {
+  if(!confirm('Delete this recipe?'))return;
+
+  try {
+    await invApi('/recipes/'+id,{method:'DELETE'});
+    notice('Recipe deleted.');
+    await loadInventory();
+  } catch(e) {
+    notice(e.message,true);
+  }
+}
+
+// PURCHASE MANAGEMENT
+
+function addPurchaseItem() {
+  const row=document.createElement('div');
+  row.className='formgrid purchase-row';
+  row.style.marginBottom='12px';
+
+  row.innerHTML=`
+    <label>Inventory Item
+      <select class="purchaseItemSelect" required>
+        <option value="">Select Item</option>${inventoryOptions()}
+      </select>
+    </label>
+    <label>Quantity
+      <input class="purchaseQty" type="number" min="0.0001" step="0.0001" required>
+    </label>
+    <label>Unit Cost (₹)
+      <input class="purchaseCost" type="number" min="0" step="0.01" required>
+    </label>
+    <button type="button" class="danger" onclick="this.parentElement.remove()">Remove</button>
+  `;
+
+  $('purchaseItems').appendChild(row);
+}
+
+function renderPurchases() {
+  $('purchaseTable').innerHTML=table(
+    ['Supplier','Invoice','Items','Total','Purchase Date'],
+    (inventoryData.purchases||[]).map(p=>`<tr>
+      <td>${esc(p.supplier)}</td>
+      <td>${esc(p.invoiceNo)}</td>
+      <td>${(p.items||[]).map(i=>`${esc(i.name)} × ${i.quantity}`).join('<br>')}</td>
+      <td>${money(p.total)}</td>
+      <td>${date(p.purchaseDate)}</td>
+    </tr>`).join('')
+  );
+}
+
+$('purchaseForm').onsubmit=async e=>{
+  e.preventDefault();
+
+  const items=[...document.querySelectorAll('.purchase-row')].map(row=>({
+    inventoryItem:row.querySelector('.purchaseItemSelect').value,
+    quantity:Number(row.querySelector('.purchaseQty').value),
+    unitCost:Number(row.querySelector('.purchaseCost').value)
+  }));
+
+  try {
+    await invApi('/purchases',{
+      method:'POST',
+      body:JSON.stringify({
+        supplier:$('purchaseSupplier').value,
+        invoiceNo:$('purchaseInvoice').value,
+        purchaseDate:$('purchaseDate').value,
+        notes:$('purchaseNotes').value,
+        items
+      })
+    });
+
+    notice('Purchase saved and stock updated successfully.');
+    $('purchaseForm').reset();
+    $('purchaseItems').innerHTML='';
+    addPurchaseItem();
+    await loadInventory();
+  } catch(e) {
+    notice(e.message,true);
+  }
+};
+
+// EXPENSE MANAGEMENT
+
+async function loadExpenses() {
+  try {
+    const start=$('expenseStart').value;
+    const end=$('expenseEnd').value;
+
+    const params=new URLSearchParams();
+    if(start)params.set('startDate',start);
+    if(end)params.set('endDate',end);
+
+    const d=await invApi('/expenses?'+params.toString());
+    inventoryData.expenses=d.expenses||[];
+
+    $('expenseTable').innerHTML=table(
+      ['Category','Description','Amount','Date','Payment','Notes','Action'],
+      inventoryData.expenses.map(x=>`<tr>
+        <td>${esc(x.category)}</td>
+        <td>${esc(x.description)}</td>
+        <td>${money(x.amount)}</td>
+        <td>${date(x.date)}</td>
+        <td>${esc(x.paymentMethod)}</td>
+        <td>${esc(x.notes)}</td>
+        <td><button class="danger" onclick="deleteExpense('${x._id}')">Delete</button></td>
+      </tr>`).join('')
+    );
+  } catch(e) {
+    notice(e.message,true);
+  }
+}
+
+$('expenseForm').onsubmit=async e=>{
+  e.preventDefault();
+
+  try {
+    await invApi('/expenses',{
+      method:'POST',
+      body:JSON.stringify({
+        category:$('expenseCategory').value,
+        description:$('expenseDescription').value,
+        amount:Number($('expenseAmount').value),
+        date:$('expenseDate').value,
+        paymentMethod:$('expenseMethod').value,
+        notes:$('expenseNotes').value
+      })
+    });
+
+    notice('Expense recorded successfully.');
+    $('expenseForm').reset();
+    await loadExpenses();
+  } catch(e) {
+    notice(e.message,true);
+  }
+};
+
+async function deleteExpense(id) {
+  if(!confirm('Delete this expense record?'))return;
+
+  try {
+    await invApi('/expenses/'+id,{method:'DELETE'});
+    notice('Expense deleted.');
+    await loadExpenses();
+  } catch(e) {
+    notice(e.message,true);
+  }
+}
+
+async function loadAccountingReport() {
+  try {
+    const params=new URLSearchParams();
+    if($('expenseStart').value)params.set('startDate',$('expenseStart').value);
+    if($('expenseEnd').value)params.set('endDate',$('expenseEnd').value);
+
+    const d=await invApi('/reports?'+params.toString());
+
+    $('accountingSummary').innerHTML=`
+      <div class="cards">
+        <div class="card"><small>Room Income</small><strong>${money(d.roomIncome)}</strong></div>
+        <div class="card"><small>Food Income</small><strong>${money(d.foodIncome)}</strong></div>
+        <div class="card"><small>Total Income</small><strong>${money(d.income)}</strong></div>
+        <div class="card"><small>Expenses</small><strong>${money(d.expenseTotal)}</strong></div>
+        <div class="card"><small>Purchases</small><strong>${money(d.purchaseTotal)}</strong></div>
+        <div class="card"><small>Net After Expenses</small><strong>${money(d.netAfterExpenses)}</strong></div>
+        <div class="card"><small>Cash Flow After Purchases</small><strong>${money(d.cashFlowAfterPurchasesAndExpenses)}</strong></div>
+      </div>
+    `;
+  } catch(e) {
+    notice(e.message,true);
+  }
+}
+
+// Initialize inventory forms
+$('purchaseDate').value=new Date().toLocaleDateString('en-CA');
+$('expenseDate').value=new Date().toLocaleDateString('en-CA');
+$('expenseStart').value=new Date().toLocaleDateString('en-CA');
+$('expenseEnd').value=new Date().toLocaleDateString('en-CA');
+
+addRecipeIngredient();
+addPurchaseItem();
+
+// ================= END INVENTORY MANAGEMENT =================
+
+
 const reportToday = new Date().toLocaleDateString('en-CA');
 $('reportDate').value = reportToday;
 $('reportStartDate').value = reportToday;

@@ -6,6 +6,7 @@ const adminAuth = require('../middleware/adminAuth');
 const createNotification = require('../utils/createNotification');
 const createAdminNotification = require('../utils/createAdminNotification');
 const { getActiveOffer, calculateDiscount } = require('../utils/offerPricing');
+const { updateOrderStock } = require('../utils/inventoryService');
 
 const router = express.Router();
 
@@ -392,8 +393,12 @@ router.patch('/orders/admin/:id/status', adminAuth, async (req, res) => {
     }
 
     const previousStatus = order.status;
-    order.status = req.body.status;
-    await order.save();
+
+    // Stock changes and order status are committed in one MongoDB transaction.
+    await updateOrderStock(order._id, req.body.status);
+    await order.constructor.findById(order._id).then(updated => {
+      if (updated) order.status = updated.status;
+    });
 
     if (previousStatus !== order.status) {
       const messages = {
