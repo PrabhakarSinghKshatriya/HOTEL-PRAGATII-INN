@@ -571,6 +571,8 @@ $('reportStats').innerHTML = [
   ['Food Orders', s.todayOrders],
   ['Room Collection', money(s.roomCollection)],
   ['Food Collection', money(s.foodCollection)],
+  ['Online Collection', money(s.onlineCollection)],
+  ['Cash Collection', money(s.cashCollection)],
   ['Total Collection', money(s.todayCollection)]
 ].map(([a,b]) => `<div class="card"><small>${a}</small><strong>${b ?? 0}</strong></div>`).join('');
 

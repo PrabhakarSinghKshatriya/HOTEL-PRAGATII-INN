@@ -70,6 +70,15 @@ router.get('/data', async (req, res) => {
       .filter(x => x.paymentStatus === 'Paid')
       .reduce((sum, x) => sum + Number(x.total || 0), 0);
 
+    // Payment-method collections include only successfully paid records.
+    const onlineCollection = [...allBookings, ...allOrders]
+      .filter(x => x.paymentStatus === 'Paid' && x.paymentMethod === 'UPI')
+      .reduce((sum, x) => sum + Number(x.total || 0), 0);
+
+    const cashCollection = [...allBookings, ...allOrders]
+      .filter(x => x.paymentStatus === 'Paid' && x.paymentMethod === 'Cash')
+      .reduce((sum, x) => sum + Number(x.total || 0), 0);
+
     const todayCheckins = allBookings.filter(b => {
       const value = new Date(b.checkin);
       return value >= start && value < end;
@@ -151,6 +160,8 @@ router.get('/data', async (req, res) => {
         todayCollection: paid,
         roomCollection: bookingRevenue,
         foodCollection: foodRevenue,
+        onlineCollection,
+        cashCollection,
         unpaidBookings: bookings.filter(b => b.paymentStatus === 'Unpaid').length,
         unpaidOrders: orders.filter(o => o.paymentStatus === 'Unpaid').length
       }
