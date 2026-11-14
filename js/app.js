@@ -1060,3 +1060,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.querySelector('.btn-modal-close')?.addEventListener('click', closeModal);
 });
+
+
+// Load the shared customer notification center.
+(() => {
+  const script = document.createElement('script');
+  script.src = 'js/customer-notifications.js';
+  script.defer = true;
+  document.head.appendChild(script);
+})();
