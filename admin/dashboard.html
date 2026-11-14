@@ -29,6 +29,14 @@ button{border:0;border-radius:7px;padding:10px 14px;cursor:pointer;font-weight:6
 nav{width:220px;background:#fff;padding:18px 12px;box-shadow:2px 0 8px #00000008;flex-shrink:0}
 nav button{display:block;width:100%;text-align:left;background:transparent;padding:13px;margin-bottom:5px;color:#34445c}
 nav button.active,nav button:hover{background:#eaf0ff;color:#2455c5}
+nav .nav-group{margin-bottom:5px}
+nav .nav-group-toggle{display:flex;justify-content:space-between;align-items:center}
+nav .nav-arrow{font-size:11px;transition:transform .2s}
+nav .nav-group.open .nav-arrow{transform:rotate(180deg)}
+nav .nav-submenu{display:none;padding-left:12px}
+nav .nav-group.open .nav-submenu{display:block}
+nav .nav-submenu button{font-size:13px;padding:11px 9px}
+
 main{padding:25px;width:100%;min-width:0}
 .section{display:none}.section.active{display:block}
 h2{margin-top:0}
@@ -77,19 +85,29 @@ textarea{min-height:70px}
 
 <div class="layout">
 <nav>
-  <button class="active" data-page="overview">📊 Overview</button>
-  <button data-page="bookings">🛏️ Room Bookings</button>
-  <button data-page="rooms">🏨 Room Management</button>
-  <button data-page="orders">🍽️ Food Orders</button>
-  <button data-page="inventory">📦 Inventory Management</button>
-  <button data-page="recipes">🧾 Recipe Management</button>
-  <button data-page="purchases">🛒 Stock Purchases</button>
-  <button data-page="expenses">💰 Expenses</button>
-  <button data-page="menu">📋 Food Menu</button>
-  <button data-page="offers">🎁 Offers Management</button>
-  <button data-page="customers">👥 Customers</button>
-  <button data-page="payments">💳 Payments</button>
-  <button data-page="reports">📈 Reports</button>
+  <button type="button" class="active" data-page="overview">📊 Overview</button>
+  <button type="button" data-page="bookings">🛏️ Room Bookings</button>
+  <button type="button" data-page="rooms">🏨 Room Management</button>
+  <button type="button" data-page="orders">🍽️ Food Orders</button>
+
+  <div class="nav-group">
+    <button type="button" class="nav-group-toggle" id="hotelManagementToggle"
+      aria-expanded="false" aria-controls="hotelManagementSubmenu">
+      🏨 Hotel Management <span class="nav-arrow">▼</span>
+    </button>
+    <div class="nav-submenu" id="hotelManagementSubmenu">
+      <button type="button" data-page="inventory">📦 Inventory Management</button>
+      <button type="button" data-page="recipes">🧾 Recipe Management</button>
+      <button type="button" data-page="purchases">🛒 Stock Purchases</button>
+      <button type="button" data-page="expenses">💰 Expenses</button>
+    </div>
+  </div>
+
+  <button type="button" data-page="menu">📋 Food Menu</button>
+  <button type="button" data-page="offers">🎁 Offers Management</button>
+  <button type="button" data-page="customers">👥 Customers</button>
+  <button type="button" data-page="payments">💳 Payments</button>
+  <button type="button" data-page="reports">📈 Reports</button>
 </nav>
 
 <main>
@@ -477,12 +495,7 @@ async function openAdminNotification(id){
     $('notificationDropdown').classList.remove('open');
 
     const page = item.type === 'booking' ? 'bookings' : 'orders';
-    document.querySelectorAll('nav button').forEach(b => {
-      b.classList.toggle('active', b.dataset.page === page);
-    });
-    document.querySelectorAll('.section').forEach(section => {
-      section.classList.toggle('active', section.id === page);
-    });
+    navigateAdminPage(page);
 
     const search = item.type === 'booking' ? $('bookingSearch') : $('orderSearch');
     search.value = item.refNo;
@@ -500,16 +513,32 @@ document.addEventListener('click', event => {
   }
 });
 
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  $(b.dataset.page).classList.add('active');
+const hotelManagementGroup = document.querySelector('.nav-group');
 
-  if(['inventory','recipes','purchases','expenses'].includes(b.dataset.page)) {
+$('hotelManagementToggle').onclick = () => {
+  const isOpen = hotelManagementGroup.classList.toggle('open');
+  $('hotelManagementToggle').setAttribute('aria-expanded', String(isOpen));
+};
+
+function navigateAdminPage(page) {
+  document.querySelectorAll('nav button[data-page]').forEach(button => {
+    button.classList.toggle('active', button.dataset.page === page);
+  });
+
+  document.querySelectorAll('.section').forEach(section => {
+    section.classList.toggle('active', section.id === page);
+  });
+
+  if(['inventory','recipes','purchases','expenses'].includes(page)) {
+    hotelManagementGroup.classList.add('open');
+    $('hotelManagementToggle').setAttribute('aria-expanded', 'true');
     loadInventory();
-    if(b.dataset.page==='expenses') loadExpenses();
+    if(page === 'expenses') loadExpenses();
   }
+}
+
+document.querySelectorAll('nav button[data-page]').forEach(button => {
+  button.onclick = () => navigateAdminPage(button.dataset.page);
 });
 
 function table(headers,rows){return `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows||'<tr><td colspan="12">No records found.</td></tr>'}</tbody></table>`}
