@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Bookings | Hotel Pragati</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.portal{max-width:1050px;margin:45px auto;padding:20px}
+.portal h1{text-align:center;margin-bottom:10px}
+.portal-sub{text-align:center;color:#777;margin-bottom:28px}
+.lookup{display:flex;gap:10px;max-width:600px;margin:20px auto 35px;flex-wrap:wrap}
+.lookup input{flex:1;min-width:190px;padding:14px;border:1px solid #ddd;border-radius:8px}
+button,.btn{border:0;border-radius:7px;padding:11px 16px;cursor:pointer;background:#a87936;color:white;text-decoration:none;display:inline-block}
+.card{background:white;border:1px solid #e8e2d9;border-radius:12px;padding:20px;margin:16px 0;box-shadow:0 3px 15px #0000000a}
+.card h3{margin:0 0 12px;color:#946a30}
+.details{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0}
+.details small{display:block;color:#888;margin-bottom:4px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.secondary{background:#555}.danger{background:#a33}.green{background:#287747}
+#message{text-align:center;margin:15px;color:#a87936}
+.empty{text-align:center;padding:30px;color:#777}
+.support{text-align:center;margin:35px 0;padding:22px;background:#f8f4ed;border-radius:12px}
+@media print{nav,.lookup,.actions,.support,.portal-sub{display:none!important}.portal{margin:0;padding:0}.card{break-inside:avoid;box-shadow:none}}
+</style>
+</head>
+<body>
+<nav>
+<div class="nav-links">
+<a href="index.html">Home</a><a href="rooms.html">Rooms</a>
+<a href="food.html">Food Order</a><a href="my-bookings.html" class="active">My Bookings</a>
+<a href="contact.html">Contact</a><a href="admin/login.html">Admin Login</a>
+</div>
+<div class="hamburger"><span></span><span></span><span></span></div>
+</nav>
+<main class="portal">
+<h1>My Bookings & Orders</h1>
+<p class="portal-sub">View your room bookings, food orders and updates — no account required.</p>
+<div class="lookup">
+<input id="phone" type="tel" maxlength="10" placeholder="Enter your 10-digit mobile number">
+<button onclick="loadHistory()">Find My Bookings</button>
+</div>
+<div id="message"></div>
+<div id="results"></div>
+<div class="support">
+<h3>Need Help?</h3>
+<p>Contact Hotel Pragati for booking or food assistance.</p>
+<a class="btn green" href="https://wa.me/919236413187" target="_blank">WhatsApp</a>
+<a class="btn secondary" href="tel:+919236413187">Call Hotel</a>
+</div>
+</main>
+<script src="js/config.js"></script>
+<script>
+const API=window.API_BASE_URL||'';
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=v=>'₹'+Number(v||0).toLocaleString('en-IN');
+const date=v=>v?new Date(v).toLocaleDateString('en-IN'):'—';
+let phone='',records=[];
+function msg(t){$('message').textContent=t}
+async function loadHistory(){
+phone=$('phone').value.trim();
+if(!/^[0-9]{10}$/.test(phone)){msg('Please enter a valid 10-digit mobile number.');return}
+msg('Loading your bookings and orders...');
+try{
+const r=await fetch(API+'/api/customer/history?phone='+encodeURIComponent(phone));
+const d=await r.json();
+if(!r.ok)throw Error(d.message||'Unable to load history');
+const submittedFeedback=new Set((d.feedback||[]).map(f=>f.type+':'+f.refNo));
+records=[...(d.bookings||[]).map(x=>({...x,_type:'booking'})),...(d.orders||[]).map(x=>({...x,_type:'food'}))];
+records.forEach(x=>x._feedbackSubmitted=submittedFeedback.has(x._type+':'+x.refNo));
+records.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+render();msg(records.length?'Your records are shown below.':'No bookings or food orders found for this number.');
+}catch(e){msg(e.message)}
+}
+function render(){
+$('results').innerHTML=records.map((x,i)=>{
+const booking=x._type==='booking',type=booking?'booking':'food';
+const ref=esc(x.refNo),status=esc(x.status);
+const cancel=booking?!['Cancelled','Completed','Checked-in'].includes(x.status):!['Cancelled','Served'].includes(x.status);
+const items=booking?`Room ${esc(x.roomNumber||x.roomName)} — ${esc(x.roomType||'')}`:(x.items||[]).map(i=>`${esc(i.name)} (${esc(i.variant)}) × ${esc(i.qty)}`).join('<br>');
+return `<section class="card">
+<h3>${booking?'Room Booking':'Food Order'} — ${ref}</h3>
+<strong>Status: ${status}</strong>
+<div class="details">
+<div><small>Customer</small>${esc(x.name||x.customerName)}</div>
+<div><small>Reference</small>${ref}</div>
+<div><small>Date</small>${date(x.createdAt)}</div>
+<div><small>Total</small>${money(x.total)}</div>
+<div><small>Payment</small>${esc(x.paymentStatus||'')}</div>
+<div><small>Details</small>${items}</div>
+${booking?`<div><small>Check-in</small>${date(x.checkin)}</div><div><small>Check-out</small>${date(x.checkout)}</div>`:''}
+</div>
+${x.cancellationRequest?.requested?'<p>Cancellation request: Submitted</p>':''}
+<div class="actions">
+<button onclick="invoice(${i})">Download / Print Invoice</button>
+${cancel&&!x.cancellationRequest?.requested?`<button class="danger" onclick="cancelRequest(${i})">Request Cancellation</button>`:''}
+${['Completed','Served'].includes(x.status)?(x._feedbackSubmitted?'<span>✓ Feedback submitted</span>':`<button class="green" onclick="feedback(${i})">Give Feedback</button>`):''}
+</div></section>`;
+}).join('');
+}
+function invoice(i){
+const x=records[i],booking=x._type==='booking';
+const w=window.open('','_blank');
+if(!w){msg('Please allow pop-ups to print your invoice.');return}
+w.document.write(`<html><head><title>Hotel Pragati Invoice</title><style>body{font:16px Arial;padding:35px;color:#333}h1{color:#93682f}hr{margin:25px 0}p{padding:8px;border-bottom:1px solid #eee}@media print{button{display:none}}</style></head><body><h1>HOTEL PRAGATI</h1><p>Jamuar, Gorakhpur, Uttar Pradesh</p><hr><h2>${booking?'Room Booking':'Food Order'} Invoice</h2><p>Reference: ${esc(x.refNo)}</p><p>Customer: ${esc(x.name||x.customerName)}</p><p>Phone: ${esc(phone)}</p><p>Date: ${date(x.createdAt)}</p><p>Status: ${esc(x.status)}</p><p>Subtotal: ${money(x.subtotal)}</p><p>Tax: ${money(x.tax)}</p><h2>Total: ${money(x.total)}</h2><p>Thank you for choosing Hotel Pragati!</p><button onclick="window.print()">Print / Save as PDF</button></body></html>`);
+w.document.close();
+}
+async function cancelRequest(i){
+const x=records[i],reason=prompt('Please enter cancellation reason:');
+if(reason===null)return;
+try{
+const r=await fetch(API+'/api/customer/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:x._type,refNo:x.refNo,phone,reason})});
+const d=await r.json();if(!r.ok)throw Error(d.message||'Request failed');
+alert(d.message||'Cancellation request submitted for hotel approval.');loadHistory();
+}catch(e){alert(e.message)}
+}
+async function feedback(i){
+const x=records[i],rating=Number(prompt('Please rate us from 1 to 5 stars:'));
+if(!Number.isInteger(rating)||rating<1||rating>5)return alert('Please enter a rating from 1 to 5.');
+const comment=prompt('Share your feedback (optional):')||'';
+try{
+const r=await fetch(API+'/api/customer/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:x._type,refNo:x.refNo,phone,rating,comment})});
+const d=await r.json();if(!r.ok)throw Error(d.message||'Feedback failed');
+alert(d.message||'Thank you for your feedback!');loadHistory();
+}catch(e){alert(e.message)}
+}
+$('phone').addEventListener('keydown',e=>{if(e.key==='Enter')loadHistory()});
+const saved=new URLSearchParams(location.search).get('phone');if(saved&&/^\d{10}$/.test(saved)){$('phone').value=saved;loadHistory()}
+</script>
+</body>
+</html>

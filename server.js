@@ -38,6 +38,7 @@ app.use('/api/bookings', require('./backend/routes/bookings'));
 app.use('/api/food', require('./backend/routes/food'));
 app.use('/api/offers', require('./backend/routes/offers'));
 app.use('/api/notifications', require('./backend/routes/notifications'));
+app.use('/api/customer', require('./backend/routes/customer'));
 app.use('/api/admin', require('./backend/routes/admin'));
 app.use('/api/inventory', require('./backend/routes/inventory'));
 

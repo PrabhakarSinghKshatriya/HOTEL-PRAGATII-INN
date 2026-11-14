@@ -6,6 +6,7 @@ const FoodItem = require('../models/FoodItem');
 const Room = require('../models/Room');
 const Offer = require('../models/Offer');
 const AdminNotification = require('../models/AdminNotification');
+const CustomerFeedback = require('../models/CustomerFeedback');
 
 const router = express.Router();
 
@@ -537,5 +538,38 @@ router.patch('/notifications/read-all', async (req, res) => {
     });
   }
 });
+
+
+// All customer feedback for the authenticated admin dashboard.
+router.get('/feedback', async (req, res) => {
+  try {
+    const [summary, feedback] = await Promise.all([
+      CustomerFeedback.aggregate([
+        { $group: {
+          _id: null,
+          totalReviews: { $sum: 1 },
+          averageRating: { $avg: '$rating' }
+        }}
+      ]),
+      CustomerFeedback.find()
+        .sort({ createdAt: -1, _id: -1 })
+        .limit(500)
+        .lean()
+    ]);
+
+    const result = summary[0] || { totalReviews: 0, averageRating: 0 };
+
+    res.json({
+      success: true,
+      totalReviews: result.totalReviews,
+      averageRating: Number(result.averageRating.toFixed(1)),
+      feedback
+    });
+  } catch (error) {
+    console.error('Admin feedback:', error);
+    res.status(500).json({ success: false, message: 'Unable to load customer feedback.' });
+  }
+});
+
 
 module.exports = router;

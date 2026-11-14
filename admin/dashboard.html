@@ -108,6 +108,7 @@ textarea{min-height:70px}
   <button type="button" data-page="customers">👥 Customers</button>
   <button type="button" data-page="payments">💳 Payments</button>
   <button type="button" data-page="reports">📈 Reports</button>
+  <button type="button" data-page="feedback" onclick="loadCustomerFeedback()">⭐ Customer Reviews</button>
 </nav>
 
 <main>
@@ -398,6 +399,16 @@ textarea{min-height:70px}
 <div class="panel"><h3>Food Order Payments</h3><div id="foodPayments"></div></div>
 </section>
 
+
+<section id="feedback" class="section">
+  <h2>⭐ Customer Reviews</h2>
+  <div class="cards" id="feedbackStats"></div>
+  <div class="toolbar">
+    <button class="primary" type="button" onclick="loadCustomerFeedback()">Refresh Reviews</button>
+  </div>
+  <div class="panel" id="feedbackTable">Loading reviews...</div>
+</section>
+
 <section id="reports" class="section">
 <h2>Reports</h2>
 <div class="toolbar">
@@ -432,6 +443,57 @@ const date=v=>v?new Date(v).toLocaleString('en-IN'):'—';
 function notice(msg,error=false){$('notice').textContent=msg;$('notice').style.display='block';$('notice').style.background=error?'#ffe5e5':'#e2f7e9';window.scrollTo({top:0,behavior:'smooth'});setTimeout(()=>$('notice').style.display='none',4500)}
 function logout(){localStorage.removeItem('hotel_admin_token');localStorage.removeItem('hotel_admin_name');location.href='login.html'}
 async function api(url,options={}){const r=await fetch(window.API_BASE_URL + url,{...options,headers:{...headers,...options.headers}});let d={};try{d=await r.json()}catch{}if(r.status===401||r.status===403){logout();throw Error('Admin session expired. Please login again.')}if(!r.ok||d.success===false)throw Error(d.message||'Request failed');return d}
+
+
+async function loadCustomerFeedback() {
+  const table = $('feedbackTable');
+  if (!table) return;
+
+  table.innerHTML = 'Loading customer reviews...';
+
+  try {
+    const data = await api('/api/admin/feedback');
+    const reviews = data.feedback || [];
+
+    $('feedbackStats').innerHTML = `
+      <div class="card"><small>Overall Rating</small><strong>⭐ ${Number(data.averageRating || 0).toFixed(1)} / 5</strong></div>
+      <div class="card"><small>Total Reviews</small><strong>${Number(data.totalReviews || 0)}</strong></div>
+      <div class="card"><small>Room Reviews</small><strong>${reviews.filter(r => r.type === 'booking').length}</strong></div>
+      <div class="card"><small>Food Reviews</small><strong>${reviews.filter(r => r.type === 'food').length}</strong></div>
+    `;
+
+    if (!reviews.length) {
+      table.innerHTML = '<p>No customer reviews received yet.</p>';
+      return;
+    }
+
+    table.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th>Customer</th><th>Phone</th><th>Type</th>
+            <th>Reference</th><th>Rating</th><th>Feedback</th><th>Date</th>
+          </tr></thead>
+          <tbody>
+            ${reviews.map(r => `
+              <tr>
+                <td>${esc(r.customerName || 'Guest')}</td>
+                <td>${esc(r.phone)}</td>
+                <td>${r.type === 'booking' ? 'Room Booking' : 'Food Order'}</td>
+                <td>${esc(r.refNo)}</td>
+                <td style="color:#d69e2e;">${'★'.repeat(Number(r.rating) || 0)}${'☆'.repeat(5-(Number(r.rating)||0))}</td>
+                <td style="white-space:normal;min-width:180px;">${esc(r.comment || 'No written comment')}</td>
+                <td>${date(r.createdAt)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch (error) {
+    table.innerHTML = '<p>Unable to load reviews. Please refresh.</p>';
+    console.error('Admin reviews:', error);
+  }
+}
 
 let adminNotifications = [];
 

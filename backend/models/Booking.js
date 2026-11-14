@@ -100,6 +100,11 @@ const bookingSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  cancellationRequest: {
+    requested: { type: Boolean, default: false },
+    reason: { type: String, default: '', maxlength: 500 },
+    requestedAt: { type: Date, default: null }
+  },
   paymentStatus: {
     type: String,
     enum: ['Unpaid', 'Pending', 'Paid', 'Refunded'],

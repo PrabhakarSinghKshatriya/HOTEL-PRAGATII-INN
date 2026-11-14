@@ -27,6 +27,7 @@
     <a href="index.html" class="active">Home</a>
     <a href="rooms.html">Rooms</a>
     <a href="food.html">Food Order</a>
+    <a href="my-bookings.html">My Bookings</a>
     <a href="contact.html">Contact</a>
     <a href="admin/login.html" class="admin-nav-link">🔐 Admin Login</a>
     <a href="food.html" class="nav-cart-btn">
@@ -67,8 +68,8 @@
     <div class="hero-badge">
       <span class="badge-icon">⭐</span>
       <div class="badge-text">
-        <strong>4.5 Rating</strong>
-        <span>Google Reviews</span>
+        <strong id="homeOverallRating">— / 5</strong>
+        <span id="homeReviewCount">Customer Reviews</span>
       </div>
     </div>
     <div class="hero-badge">
@@ -211,47 +212,25 @@
   <div class="food-teaser-img"></div>
 </div>
 
-<!-- ═══════════════════════ TESTIMONIALS ═══════════════════════ -->
-<section style="background:var(--ivory); padding:80px 8%;">
+<!-- DYNAMIC CUSTOMER REVIEWS -->
+<section style="background:var(--ivory);padding:80px 8%;">
   <div class="section-label" style="justify-content:center;margin-bottom:12px">
-    <span>Guest Reviews</span>
+    <span>Genuine Guest Reviews</span>
   </div>
-  <h2 class="section-title text-center" style="margin-bottom:48px">What Our Guests Say</h2>
+  <h2 class="section-title text-center" style="margin-bottom:18px">What Our Guests Say</h2>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
-    <div style="background:white;border-radius:var(--radius-lg);padding:28px;border:1px solid var(--border);box-shadow:var(--shadow)">
-      <div style="color:var(--gold);font-size:1.1rem;margin-bottom:12px">★★★★★</div>
-      <p style="font-size:0.88rem;color:var(--text-light);line-height:1.8;margin-bottom:16px">"Very clean rooms and friendly staff. The food was excellent — especially the dal fry and paratha. Highly recommended for anyone visiting Gorakhpur area!"</p>
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:40px;height:40px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-family:var(--font-display)">R</div>
-        <div>
-          <div style="font-weight:600;font-size:0.88rem;color:var(--espresso)">Rahul Sharma</div>
-          <div style="font-size:0.75rem;color:var(--text-light)">Google Review</div>
-        </div>
-      </div>
+  <div style="text-align:center;margin-bottom:38px;">
+    <div style="font-size:2rem;color:var(--gold);font-weight:700;">
+      <span id="reviewsAverage">—</span> / 5 ⭐
     </div>
-    <div style="background:white;border-radius:var(--radius-lg);padding:28px;border:1px solid var(--border);box-shadow:var(--shadow)">
-      <div style="color:var(--gold);font-size:1.1rem;margin-bottom:12px">★★★★★</div>
-      <p style="font-size:0.88rem;color:var(--text-light);line-height:1.8;margin-bottom:16px">"Best hotel in the Jamuar area. AC rooms are comfortable, parking is easy, and the location is perfect. Will definitely come back on my next trip."</p>
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:40px;height:40px;border-radius:50%;background:var(--gold-dark);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-family:var(--font-display)">P</div>
-        <div>
-          <div style="font-weight:600;font-size:0.88rem;color:var(--espresso)">Priya Singh</div>
-          <div style="font-size:0.75rem;color:var(--text-light)">Google Review</div>
-        </div>
-      </div>
+    <div style="color:var(--text-light);font-size:.9rem;">
+      Based on <strong id="reviewsTotal">0</strong> customer reviews
     </div>
-    <div style="background:white;border-radius:var(--radius-lg);padding:28px;border:1px solid var(--border);box-shadow:var(--shadow)">
-      <div style="color:var(--gold);font-size:1.1rem;margin-bottom:12px">★★★★☆</div>
-      <p style="font-size:0.88rem;color:var(--text-light);line-height:1.8;margin-bottom:16px">"Good value for money. Room service was quick and food was tasty. Staff is helpful and courteous. Nice experience overall — I recommend the Executive Suite!"</p>
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:40px;height:40px;border-radius:50%;background:var(--espresso);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-family:var(--font-display)">A</div>
-        <div>
-          <div style="font-weight:600;font-size:0.88rem;color:var(--espresso)">Amit Pandey</div>
-          <div style="font-size:0.75rem;color:var(--text-light)">Google Review</div>
-        </div>
-      </div>
-    </div>
+  </div>
+
+  <div id="homeLatestReviews"
+       style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:24px;">
+    <p style="text-align:center;color:var(--text-light);">Loading customer reviews...</p>
   </div>
 </section>
 
